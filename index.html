@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Aarav's Net Worth Tracker - Public Live</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      background: #0A0A0B;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.6;
+    }
+    .container { max-width: 1160px; margin: 0 auto; padding: 0 1rem; }
+    
+    .stock-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+      padding: 2rem 0;
+    }
+    
+    .stock-card {
+      background: linear-gradient(135deg, rgba(16,185,129,.05) 0%, rgba(6,182,212,.02) 100%);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 1.5rem;
+      padding: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    
+    .logo-box {
+      flex-shrink: 0;
+      width: 56px;
+      height: 56px;
+      background: white;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.15);
+      box-shadow: 0 8px 20px -10px rgba(16,185,129,.2);
+    }
+    
+    .logo-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      padding: 4px;
+    }
+    
+    .stock-info { flex: 1; min-width: 0; }
+    .stock-name { font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem; }
+    
+    .stock-details {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      font-size: 0.9rem;
+      color: rgba(255,255,255,.7);
+    }
+    
+    .detail-label { color: rgba(255,255,255,.4); font-size: 0.8rem; text-transform: uppercase; }
+    .detail-value { font-weight: 600; margin-top: 0.25rem; }
+    
+    .positive { color: #10B981; }
+    .negative { color: #EF4444; }
+    
+    h1 { 
+      font-size: 2.5rem;
+      margin: 2rem 0 1rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #10B981, #06B6D4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .subtitle { color: rgba(255,255,255,.5); margin-bottom: 2rem; }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .stock-card {
+      animation: fadeIn 0.6s ease-out backwards;
+    }
+    
+    .stock-card:nth-child(1) { animation-delay: 0s; }
+    .stock-card:nth-child(2) { animation-delay: 0.1s; }
+    .stock-card:nth-child(3) { animation-delay: 0.2s; }
+    .stock-card:nth-child(4) { animation-delay: 0.3s; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Indian Stocks</h1>
+  <p class="subtitle">Real-time holdings with live company logos</p>
+  
+  <div class="stock-grid">
+    <!-- ABCAPITAL -->
+    <div class="stock-card">
+      <div class="logo-box">
+        <img src="https://images.seeklogo.com/logo-png/0/1/ab-capital-logo-png_seeklogo-1781.png" alt="ABC Capital" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 36 36%22%3E%3Ccircle cx=%2218%22 cy=%2718%22 r=%2716%22 fill=%228B1A1A%22/%3E%3Ctext x=%2718%22 y=%2720%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2714%22 font-weight=%22900%22%3EAB%3C/text%3E%3C/svg%3E'">
+      </div>
+      <div class="stock-info">
+        <div class="stock-name">ABCAPITAL</div>
+        <div class="stock-details">
+          <div>
+            <div class="detail-label">Qty</div>
+            <div class="detail-value">42</div>
+          </div>
+          <div>
+            <div class="detail-label">Avg</div>
+            <div class="detail-value">₹222.03</div>
+          </div>
+          <div>
+            <div class="detail-label">LTP</div>
+            <div class="detail-value positive">₹408.30</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ASHOKLEY -->
+    <div class="stock-card">
+      <div class="logo-box">
+        <img src="https://www.logo.wine/a/logo/Ashok_Leyland/Ashok_Leyland-Logo.wine.svg" alt="Ashok Leyland" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 36 36%22%3E%3Ccircle cx=%2718%22 cy=%2718%22 r=%2716%22 fill=%220A2A5E%22/%3E%3Ctext x=%2718%22 y=%2720%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2712%22 font-weight=%22900%22%3EAL%3C/text%3E%3C/svg%3E'">
+      </div>
+      <div class="stock-info">
+        <div class="stock-name">ASHOKLEY</div>
+        <div class="stock-details">
+          <div>
+            <div class="detail-label">Qty</div>
+            <div class="detail-value">202</div>
+          </div>
+          <div>
+            <div class="detail-label">Avg</div>
+            <div class="detail-value">₹88.50</div>
+          </div>
+          <div>
+            <div class="detail-label">LTP</div>
+            <div class="detail-value positive">₹157.49</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GANESHCP -->
+    <div class="stock-card">
+      <div class="logo-box">
+        <img src="https://logo.clearbit.com/ganeshhousing.com" alt="Ganesh Housing" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 36 36%22%3E%3Ccircle cx=%2718%22 cy=%2718%22 r=%2716%22 fill=%22FF6A00%22/%3E%3Ctext x=%2718%22 y=%2720%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2712%22 font-weight=%22900%22%3EGC%3C/text%3E%3C/svg%3E'">
+      </div>
+      <div class="stock-info">
+        <div class="stock-name">GANESHCP</div>
+        <div class="stock-details">
+          <div>
+            <div class="detail-label">Qty</div>
+            <div class="detail-value">46</div>
+          </div>
+          <div>
+            <div class="detail-label">Avg</div>
+            <div class="detail-value">₹322.00</div>
+          </div>
+          <div>
+            <div class="detail-label">LTP</div>
+            <div class="detail-value positive">₹189.85</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRANSRAILL -->
+    <div class="stock-card">
+      <div class="logo-box">
+        <img src="https://logo.clearbit.com/transrail.com" alt="Transrail" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 36 36%22%3E%3Ccircle cx=%2718%22 cy=%2718%22 r=%2716%22 fill=%221E40AF%22/%3E%3Ctext x=%2718%22 y=%2720%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2710%22 font-weight=%22900%22%3ETR%3C/text%3E%3C/svg%3E'">
+      </div>
+      <div class="stock-info">
+        <div class="stock-name">TRANSRAILL</div>
+        <div class="stock-details">
+          <div>
+            <div class="detail-label">Qty</div>
+            <div class="detail-value">44</div>
+          </div>
+          <div>
+            <div class="detail-label">Avg</div>
+            <div class="detail-value">₹773.82</div>
+          </div>
+          <div>
+            <div class="detail-label">LTP</div>
+            <div class="detail-value positive">₹508.05</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
