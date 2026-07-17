@@ -116,6 +116,17 @@ header .leading-none > div:last-child {
   display: none;
 }
 
+/* Mobile: shrink title font so "Aarav's Tracker" fits fully without ellipsis */
+@media (max-width: 639px) {
+  header .leading-none .truncate {
+    font-size: 13.5px !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: nowrap !important;
+    letter-spacing: -0.03em !important;
+  }
+}
+
 /* Animated stock-chart logo */
 @keyframes logoPulse {
   0%, 100% { opacity: 0.55; r: 2.2px; }
