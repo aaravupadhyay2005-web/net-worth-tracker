@@ -191,5 +191,41 @@ Error generating stack: `+o.message+`
   </script>
   <script>(function(){function m(a){var h=a.getAttribute("href");if(!h)return;try{var u=new URL(h,document.baseURI);if((u.protocol==="http:"||u.protocol==="https:")&&u.host!==location.host){a.target="_blank";a.rel="noopener noreferrer";}}catch(e){}}function s(){document.querySelectorAll("a[href]").forEach(m);}if(document.readyState!=="loading"){s();}else{document.addEventListener("DOMContentLoaded",s);}document.addEventListener("click",function(e){var a=e.target&&e.target.closest&&e.target.closest("a[href]");if(a){m(a);}},true);})();</script>
   
+  <script>
+    (function() {
+      // Observe the body for changes since React renders dynamically
+      const observer = new MutationObserver((mutations) => {
+        // Find elements that look like stock cards (using the 'group' class from your design)
+        const cards = document.querySelectorAll('.group');
+        
+        cards.forEach(card => {
+          if (!card.dataset.clickableAdded) {
+            card.dataset.clickableAdded = "true";
+            
+            // Make it look clickable
+            card.style.cursor = 'pointer';
+            
+            // Add click listener
+            card.addEventListener('click', (e) => {
+              // Try to extract a ticker symbol (first uppercase word of 2-6 letters)
+              const text = card.innerText || "";
+              const tickerMatch = text.match(/\b[A-Z]{2,6}\b/);
+              const ticker = tickerMatch ? tickerMatch[0] : null;
+              
+              if (ticker) {
+                window.open(`https://finance.yahoo.com/quote/${ticker}`, '_blank');
+              } else {
+                // Fallback: Just open Yahoo Finance
+                window.open('https://finance.yahoo.com', '_blank');
+              }
+            });
+          }
+        });
+      });
+
+      // Start observing
+      observer.observe(document.body, { childList: true, subtree: true });
+    })();
+  </script>
 </body>
 </html>
