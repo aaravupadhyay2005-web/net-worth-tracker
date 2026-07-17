@@ -195,52 +195,83 @@ Error generating stack: `+o.message+`
     (function() {
       // Observe the body for changes since React renders dynamically
       const observer = new MutationObserver((mutations) => {
-        // Find elements that look like stock cards (using the 'group' class from your design)
-        const cards = document.querySelectorAll('.group');
+        // Find elements that look like stock cards OR marquee pills
+        const items = document.querySelectorAll('.group, .rounded-full.whitespace-nowrap');
         
-        cards.forEach(card => {
-          if (!card.dataset.customModsAdded) {
-            card.dataset.customModsAdded = "true";
+        items.forEach(el => {
+          if (!el.dataset.customModsAdded) {
+            el.dataset.customModsAdded = "true";
             
-            // 1. Make it look clickable
-            card.style.cursor = 'pointer';
-            const text = card.innerText || "";
+            const text = el.innerText || "";
             
-            // 2. Add Country Flag (detect via currency symbol or ticker suffix)
-            let flag = "";
-            if (text.includes('₹') || text.includes('.NS') || text.includes('.BO') || text.includes('NSE') || text.includes('BSE')) {
-              flag = '🇮🇳';
-            } else if (text.includes('$') || text.includes('NYSE') || text.includes('NASDAQ')) {
-              flag = '🇺🇸';
+            // Skip USD/INR or empty
+            if (text.includes('USD/INR') || text.trim() === '') return;
+            
+            // Detect Country
+            let isIndia = false;
+            let isUS = false;
+            
+            if (text.includes('₹') || text.match(/NIFTY|SENSEX|NSE|BSE|\.NS|\.BO|ABCAPITAL|ASHOKLEY|GANESHCP|TRANSRAILL/i)) {
+              isIndia = true;
+            } else if (text.includes('$') || text.match(/S\&P|NASDAQ|NYSE|VTI|VXUS|SMH|ICLN|URNM|AVGE|RSP|VWO|SCHD|VDC/i)) {
+              isUS = true;
             }
 
+            const flag = isIndia ? '🇮🇳' : (isUS ? '🇺🇸' : '');
+
+            // 1. Add Flag
             if (flag) {
-              // Create a floating flag element in the top right corner of the card
-              card.style.position = 'relative';
-              const flagEl = document.createElement('div');
-              flagEl.innerText = flag;
-              flagEl.style.position = 'absolute';
-              flagEl.style.top = '12px';
-              flagEl.style.right = '12px';
-              flagEl.style.fontSize = '18px';
-              flagEl.style.pointerEvents = 'none'; // so it doesn't interfere with clicks
-              flagEl.style.filter = 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))';
-              card.appendChild(flagEl);
+              if (el.classList.contains('rounded-full')) {
+                // It's a pill in the marquee, prepend the flag
+                const flagSpan = document.createElement('span');
+                flagSpan.innerText = flag + ' ';
+                flagSpan.style.marginRight = '2px';
+                el.prepend(flagSpan);
+              } else {
+                // It's a card, absolute position top right
+                el.style.position = 'relative';
+                const flagEl = document.createElement('div');
+                flagEl.innerText = flag;
+                flagEl.style.position = 'absolute';
+                flagEl.style.top = '12px';
+                flagEl.style.right = '12px';
+                flagEl.style.fontSize = '18px';
+                flagEl.style.pointerEvents = 'none';
+                flagEl.style.filter = 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))';
+                el.appendChild(flagEl);
+              }
             }
             
-            // 3. Add click listener to open Yahoo Finance
-            card.addEventListener('click', (e) => {
-              // Try to extract a ticker symbol (uppercase words, potentially with .NS suffix)
-              const tickerMatch = text.match(/\b[A-Z]{2,6}(?:\.NS|\.BO)?\b/);
-              const ticker = tickerMatch ? tickerMatch[0] : null;
-              
-              if (ticker) {
-                window.open(`https://finance.yahoo.com/quote/${ticker}`, '_blank');
-              } else {
-                // Fallback: Just open Yahoo Finance
-                window.open('https://finance.yahoo.com', '_blank');
-              }
-            });
+            // 2. Make it look clickable & Add listener
+            // Only make it clickable if it seems like a specific stock/index (not a generic stats card)
+            const isClickableCard = el.classList.contains('rounded-full') || text.match(/\b[A-Z]{2,6}(?:\.NS|\.BO)?\b/);
+            
+            if (isClickableCard) {
+              el.style.cursor = 'pointer';
+              el.addEventListener('click', (e) => {
+                let ticker = null;
+                const words = text.split(/\s+/);
+                if (words.length > 0) {
+                  let firstWord = words[0].trim().replace(/[^A-Za-z0-9&]/g, '');
+                  if (firstWord === 'NIFTY') ticker = '^NSEI';
+                  else if (firstWord === 'SENSEX') ticker = '^BSESN';
+                  else if (firstWord === 'SP' || text.includes('S&P')) ticker = '^GSPC';
+                  else if (firstWord === 'NASDAQ') ticker = '^IXIC';
+                  else ticker = firstWord;
+                  
+                  // Auto-append .NS for Indian stocks if not an index
+                  if (isIndia && ticker && !ticker.startsWith('^') && !ticker.includes('.')) {
+                    ticker += '.NS';
+                  }
+                }
+                
+                if (ticker && ticker.length >= 2) {
+                  window.open(`https://finance.yahoo.com/quote/${ticker}`, '_blank');
+                } else {
+                  window.open('https://finance.yahoo.com', '_blank');
+                }
+              });
+            }
           }
         });
       });
