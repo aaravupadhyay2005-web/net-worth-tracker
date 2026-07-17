@@ -245,6 +245,12 @@ Error generating stack: `+o.message+`
             } else if (text.includes('$') || text.match(/S\&P|NASDAQ|NYSE|VTI|VXUS|SMH|ICLN|URNM|AVGE|RSP|VWO|SCHD|VDC/i)) {
               isUS = true;
             }
+            
+            // Exclude Mutual Funds from getting flags (they have 'Direct' or 'Regular' in their card text)
+            if (text.includes('Direct') || text.includes('Regular') || text.includes('SIP')) {
+              isIndia = false;
+              isUS = false;
+            }
 
             const flag = isIndia ? '🇮🇳' : (isUS ? '🇺🇸' : '');
 
