@@ -116,6 +116,13 @@ header .leading-none > div:last-child {
   display: none;
 }
 
+/* Hide refresh button on mobile — data auto-refreshes */
+@media (max-width: 639px) {
+  button.h-8.w-8.rounded-full {
+    display: none !important;
+  }
+}
+
 /* Mobile: shrink title font so "Aarav's Tracker" fits fully without ellipsis */
 @media (max-width: 639px) {
   header .leading-none .truncate {
