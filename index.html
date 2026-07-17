@@ -134,6 +134,86 @@ header .leading-none > div:last-child {
   }
 }
 
+/* ── P&L Heatmap ── */
+.heatmap-section {
+  margin: 12px 0 0;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.02);
+  backdrop-filter: blur(12px);
+  padding: 14px 16px 16px;
+  overflow: hidden;
+}
+.heatmap-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.heatmap-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.85);
+  letter-spacing: 0.01em;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.heatmap-subtitle {
+  font-size: 10px;
+  color: rgba(255,255,255,0.3);
+  font-family: 'JetBrains Mono', monospace;
+}
+.heatmap-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.heatmap-cell {
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 8px;
+  cursor: default;
+  transition: transform 0.18s ease, filter 0.18s ease;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.07);
+  position: relative;
+  min-width: 58px;
+}
+.heatmap-cell:hover {
+  transform: scale(1.04);
+  filter: brightness(1.2);
+  z-index: 2;
+  border-color: rgba(255,255,255,0.2);
+}
+.heatmap-ticker {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.92);
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  text-align: center;
+}
+.heatmap-pct {
+  font-size: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+.heatmap-empty {
+  font-size: 11px;
+  color: rgba(255,255,255,0.25);
+  text-align: center;
+  padding: 20px 0;
+  font-family: 'JetBrains Mono', monospace;
+}
+
 /* ── Bloomberg-style price flash animations ── */
 @keyframes flashUp {
   0%   { background: rgba(16,185,129,0.30); color: #6ee7b7; box-shadow: 0 0 8px rgba(16,185,129,0.4); }
@@ -561,6 +641,166 @@ Error generating stack: `+o.message+`
         characterData: true,
         characterDataOldValue: true
       });
+    })();
+
+    // ── P&L Heatmap ──
+    (function plHeatmap() {
+      var SECTION_ID = 'aarav-heatmap';
+      var FX_APPROX = 84; // USD→INR rough rate for weight normalisation
+
+      // Interpolate color from dailyPct  (-3 … 0 … +3%)
+      function pctColor(pct) {
+        var t = Math.max(-1, Math.min(1, pct / 3));
+        if (t >= 0) {
+          var r = Math.round(10  + (4   - 10)  * t);
+          var g = Math.round(140 + (211 - 140) * t);
+          var b = Math.round(80  + (153 - 80)  * t);
+          var a = 0.18 + t * 0.62;
+          return 'rgba(' + r + ',' + g + ',' + b + ',' + a.toFixed(2) + ')';
+        } else {
+          var u = -t;
+          var r2 = Math.round(140 + (239 - 140) * u);
+          var g2 = Math.round(60  + (68  - 60)  * u);
+          var b2 = Math.round(60  + (68  - 60)  * u);
+          var a2 = 0.18 + u * 0.62;
+          return 'rgba(' + r2 + ',' + g2 + ',' + b2 + ',' + a2.toFixed(2) + ')';
+        }
+      }
+
+      function borderColor(pct) {
+        return pct >= 0
+          ? 'rgba(52,211,153,' + (0.12 + Math.min(1, pct/3)*0.3) + ')'
+          : 'rgba(248,113,113,' + (0.12 + Math.min(1,-pct/3)*0.3) + ')';
+      }
+
+      function pctTextColor(pct) {
+        return pct >= 0 ? 'rgba(110,231,183,0.9)' : 'rgba(252,165,165,0.9)';
+      }
+
+      // Parse a numeric string — strips ₹ $ , + spaces
+      function parseVal(s) {
+        if (!s) return NaN;
+        return parseFloat(s.replace(/[^\d.\-]/g, ''));
+      }
+
+      // Scrape holdings from the rendered table rows
+      function scrapeHoldings() {
+        var rows = document.querySelectorAll('tr.border-b.border-white\/5');
+        if (!rows.length) return null;
+
+        var holdings = [];
+        rows.forEach(function(tr) {
+          var cells = tr.querySelectorAll('td');
+          if (cells.length < 5) return;
+
+          // Ticker: first sticky cell, text after the logo image/svg
+          var tickerEl = cells[0];
+          var ticker = (tickerEl.textContent || '').trim().replace(/\s+/g, ' ');
+          // Remove leading non-word chars
+          ticker = ticker.replace(/^[^A-Z0-9]+/, '').split(/\s/)[0];
+          if (!ticker || ticker.length < 1) return;
+
+          // Determine market from second cell
+          var market = (cells[1].textContent || '').trim(); // "IN" or "US"
+
+          // qty (col 3) and avg (col 4)
+          var qty  = parseVal(cells[2].textContent);
+          var avg  = parseVal(cells[3].textContent);
+          if (isNaN(qty) || isNaN(avg) || qty <= 0 || avg <= 0) return;
+
+          // Weight in INR terms
+          var weight = qty * avg * (market === 'US' ? FX_APPROX : 1);
+
+          // dailyPct: last cell text "+X.XX%" or "-X.XX%"
+          var lastTxt = (cells[cells.length - 1].textContent || '').trim();
+          var pctMatch = lastTxt.match(/([+\-]?\d+\.?\d*)\s*%/);
+          if (!pctMatch) return;
+          var dailyPct = parseFloat(pctMatch[1]);
+          if (isNaN(dailyPct)) return;
+
+          holdings.push({ ticker: ticker, weight: weight, pct: dailyPct, market: market });
+        });
+
+        return holdings.length ? holdings : null;
+      }
+
+      function buildHeatmap(holdings) {
+        // Sort by weight desc
+        holdings.sort(function(a, b) { return b.weight - a.weight; });
+
+        var totalWeight = holdings.reduce(function(s, h) { return s + h.weight; }, 0);
+
+        // Assign flex-grow proportional to sqrt(weight_share) — looks better visually
+        var cells = holdings.map(function(h) {
+          var share = h.weight / totalWeight;          // 0..1
+          var grow  = Math.max(1, Math.round(Math.sqrt(share) * 18));
+          var minH  = 54 + Math.round(share * 160);   // 54–80px height
+          var bg    = pctColor(h.pct);
+          var border= borderColor(h.pct);
+          var txtCol= pctTextColor(h.pct);
+          var sign  = h.pct >= 0 ? '+' : '';
+          var flag  = h.market === 'US' ? '🇺🇸' : '🇮🇳';
+
+          return '<div class="heatmap-cell" style="flex:' + grow + ';min-height:' + minH + 'px;background:' + bg + ';border-color:' + border + '">' +
+            '<span class="heatmap-ticker">' + flag + ' ' + h.ticker + '</span>' +
+            '<span class="heatmap-pct" style="color:' + txtCol + '">' + sign + h.pct.toFixed(2) + '%</span>' +
+            '</div>';
+        }).join('');
+
+        return cells;
+      }
+
+      function render() {
+        var holdings = scrapeHoldings();
+        var section = document.getElementById(SECTION_ID);
+
+        if (!holdings) {
+          // No data yet — section stays hidden
+          return false;
+        }
+
+        var cellsHTML = buildHeatmap(holdings);
+
+        // Find insertion point: the col-span-12 grid wrapping Holdings
+        if (!section) {
+          // Find the Holdings h3 → walk up to the grid container
+          var h3 = null;
+          document.querySelectorAll('h3').forEach(function(el) {
+            if (el.textContent.trim() === 'Holdings') h3 = el;
+          });
+          if (!h3) return false;
+
+          var gridContainer = h3.closest('[class*="grid-cols-12"]');
+          if (!gridContainer) return false;
+
+          section = document.createElement('div');
+          section.id = SECTION_ID;
+          section.className = 'heatmap-section';
+          gridContainer.parentElement.insertBefore(section, gridContainer);
+        }
+
+        section.innerHTML =
+          '<div class="heatmap-header">' +
+            '<span class="heatmap-title">' +
+              '<svg width="13" height="13" viewBox="0 0 13 13" fill="none">' +
+                '<rect x="0" y="7" width="3" height="6" rx="1" fill="rgba(52,211,153,0.8)"/>' +
+                '<rect x="4" y="4" width="3" height="9" rx="1" fill="rgba(52,211,153,0.6)"/>' +
+                '<rect x="8" y="1" width="3" height="12" rx="1" fill="rgba(52,211,153,0.9)"/>' +
+                '<rect x="1" y="0" width="11" height="1.5" rx="0.75" fill="rgba(255,255,255,0.15)"/>' +
+              '</svg>' +
+              "Today&#8217;s P&amp;L Heatmap" +
+            '</span>' +
+            '<span class="heatmap-subtitle">sized by position &bull; live</span>' +
+          '</div>' +
+          '<div class="heatmap-grid">' + cellsHTML + '</div>';
+
+        return true;
+      }
+
+      // Run on load and keep refreshing
+      function tryRender() { if (!render()) setTimeout(tryRender, 800); }
+      setTimeout(tryRender, 2500);
+      setInterval(render, 6000);
     })();
 
     // ── Mini sparkline charts inside ticker pills ──
