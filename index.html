@@ -134,6 +134,26 @@ header .leading-none > div:last-child {
   }
 }
 
+/* ── Bloomberg-style price flash animations ── */
+@keyframes flashUp {
+  0%   { background: rgba(16,185,129,0.30); color: #6ee7b7; box-shadow: 0 0 8px rgba(16,185,129,0.4); }
+  70%  { background: rgba(16,185,129,0.10); }
+  100% { background: transparent; }
+}
+@keyframes flashDown {
+  0%   { background: rgba(239,68,68,0.30); color: #fca5a5; box-shadow: 0 0 8px rgba(239,68,68,0.4); }
+  70%  { background: rgba(239,68,68,0.10); }
+  100% { background: transparent; }
+}
+.price-flash-up {
+  animation: flashUp 0.65s ease-out forwards !important;
+  border-radius: 3px;
+}
+.price-flash-down {
+  animation: flashDown 0.65s ease-out forwards !important;
+  border-radius: 3px;
+}
+
 /* ── Market status box enhancements ── */
 @keyframes mktGlow {
   0%, 100% { box-shadow: 0 0 0 1px rgba(16,185,129,0.18), inset 0 0 18px rgba(16,185,129,0.04); }
@@ -492,6 +512,56 @@ Error generating stack: `+o.message+`
   </script>
 
   <script>
+    // ── Bloomberg price flash ──
+    (function priceFlash() {
+      function parseNum(text) {
+        if (!text) return null;
+        var clean = text.replace(/[^\d.\-]/g, '');
+        var n = parseFloat(clean);
+        return isNaN(n) ? null : n;
+      }
+
+      function looksLikePrice(text) {
+        return /[₹$][\d,]|[\d,]{4,}|[\d]+\.\d+\s*%/.test(text);
+      }
+
+      function flash(el, dir) {
+        if (!el || el === document.body) return;
+        el.classList.remove('price-flash-up', 'price-flash-down');
+        void el.offsetWidth; // reflow
+        el.classList.add(dir === 'up' ? 'price-flash-up' : 'price-flash-down');
+      }
+
+      var obs = new MutationObserver(function(mutations) {
+        mutations.forEach(function(m) {
+          if (m.type !== 'characterData') return;
+          var oldText = m.oldValue || '';
+          var newText = m.target.data || '';
+          if (oldText === newText) return;
+
+          var el = m.target.parentElement;
+          if (!el) return;
+
+          // Only flash elements that look like prices
+          var full = el.textContent || '';
+          if (!looksLikePrice(full)) return;
+
+          var oldNum = parseNum(oldText);
+          var newNum = parseNum(newText);
+          if (oldNum === null || newNum === null) return;
+          if (oldNum === newNum) return;
+
+          flash(el, newNum > oldNum ? 'up' : 'down');
+        });
+      });
+
+      obs.observe(document.body, {
+        subtree: true,
+        characterData: true,
+        characterDataOldValue: true
+      });
+    })();
+
     // ── Market status box visual enhancements ──
     (function enhanceMarketBoxes() {
       function getSessionPct(openH, openM, closeH, closeM, utcOffsetHours) {
