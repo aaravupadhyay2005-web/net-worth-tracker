@@ -98,8 +98,12 @@ body {
 }
 
 @keyframes customMarquee {
-  0% { transform: translateX(0); }
+  0%   { transform: translateX(0); }
   100% { transform: translateX(-50%); }
+}
+/* Pause marquee on hover so users can read it */
+[data-custom-marquee-added="true"]:hover {
+  animation-play-state: paused !important;
 }
 
 /* Adding padding to root so nothing gets hidden behind nav */
@@ -233,17 +237,31 @@ Error generating stack: `+o.message+`
             if (!parent.dataset.customMarqueeAdded) {
               parent.dataset.customMarqueeAdded = "true";
               
-              // Change from scrollable to animated marquee
-              parent.classList.remove('overflow-x-auto', 'overscroll-x-contain');
-              parent.classList.add('w-max', 'flex-nowrap');
-              parent.style.animation = 'customMarquee 25s linear infinite';
+              // ── Seamless marquee setup ──
+              // 1. Outer wrapper: force true overflow clip, full width
+              const outer = parent.parentElement;
+              if (outer) {
+                outer.style.overflow = 'hidden';
+                outer.style.width = '100%';
+                outer.style.maxWidth = '100%';
+              }
+
+              // 2. Strip all constraints from the track that fight translateX
+              parent.classList.remove('overflow-x-auto', 'overscroll-x-contain', 'touch-pan-x', 'scrollbar-none');
               parent.style.display = 'flex';
-              
-              // Duplicate children so the marquee loops seamlessly
+              parent.style.flexWrap = 'nowrap';
+              parent.style.width = 'max-content';
+              parent.style.maxWidth = 'none';
+              parent.style.margin = '0';          // kill mx-auto
+              parent.style.padding = '10px 0';   // top/bottom only — no side padding at seam
+              parent.style.gap = '8px';
+              parent.style.willChange = 'transform';
+              parent.style.animation = 'customMarquee 28s linear infinite';
+
+              // 3. Duplicate children so loop is seamless (exactly 2× original)
               const children = Array.from(parent.children);
               children.forEach(child => {
                 const clone = child.cloneNode(true);
-                // Mark clone so it doesn't get double processed by the observer
                 clone.dataset.customModsAdded = "true";
                 parent.appendChild(clone);
               });
