@@ -239,10 +239,10 @@ Error generating stack: `+o.message+`
             let isIndia = false;
             let isUS = false;
             
-            if (text.includes('₹') || text.match(/NIFTY|SENSEX|NSE|BSE|\.NS|\.BO|ABCAPITAL|ASHOKLEY|GANESHCP|TRANSRAILL/i)) {
-              isIndia = true;
-            } else if (text.includes('$') || text.match(/S\&P|NASDAQ|NYSE|VTI|VXUS|SMH|ICLN|URNM|AVGE|RSP|VWO|SCHD|VDC/i)) {
+            if (text.startsWith('US $') || text.includes('$') || text.match(/S\&P|NASDAQ|NYSE|VTI|VXUS|SMH|ICLN|URNM|AVGE|RSP|VWO|SCHD|VDC/i)) {
               isUS = true;
+            } else if (text.includes('₹') || text.match(/NIFTY|SENSEX|NSE|BSE|\.NS|\.BO|ABCAPITAL|ASHOKLEY|GANESHCP|TRANSRAILL/i)) {
+              isIndia = true;
             }
 
             const flag = isIndia ? '🇮🇳' : (isUS ? '🇺🇸' : '');
