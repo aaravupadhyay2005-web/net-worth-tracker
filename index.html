@@ -111,6 +111,24 @@ body {
 header .leading-none > div:last-child {
   display: none;
 }
+
+/* Animated stock-chart logo */
+@keyframes logoPulse {
+  0%, 100% { opacity: 0.55; r: 2.2px; }
+  50%       { opacity: 1;    r: 3px;   }
+}
+@keyframes logoGlow {
+  0%, 100% { opacity: 0.25; }
+  50%       { opacity: 0.6; }
+}
+@keyframes logoDraw {
+  0%   { stroke-dashoffset: 72; }
+  60%  { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: 72; }
+}
+#aarav-logo-dot  { animation: logoPulse 1.8s ease-in-out infinite; }
+#aarav-logo-glow { animation: logoDraw 4s ease-in-out infinite, logoGlow 1.8s ease-in-out infinite; }
+#aarav-logo-line { animation: logoDraw 4s ease-in-out infinite; }
   </style>
 </head>
 <body>
@@ -298,6 +316,66 @@ Error generating stack: `+o.message+`
 
       // Start observing
       observer.observe(document.body, { childList: true, subtree: true });
+    })();
+  </script>
+
+  <!-- Animated stock-chart logo injection -->
+  <script>
+    (function () {
+      const POINTS = '4,27 8,20 12,25 16,12 20,20 24,8 28,17 32,6';
+      const DOT_CX = 32, DOT_CY = 6;
+
+      function buildLogo() {
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('width', '36');
+        svg.setAttribute('height', '36');
+        svg.setAttribute('viewBox', '0 0 36 36');
+        svg.setAttribute('data-custom-logo', '1');
+        svg.style.flexShrink = '0';
+        svg.style.borderRadius = '9px';
+        svg.innerHTML = `
+          <defs>
+            <linearGradient id="lg-bg" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#0a1f14"/>
+              <stop offset="100%" stop-color="#051209"/>
+            </linearGradient>
+          </defs>
+          <rect width="36" height="36" rx="9" fill="url(#lg-bg)"/>
+          <!-- glow layer -->
+          <polyline id="aarav-logo-glow" points="${POINTS}"
+            fill="none" stroke="#34d399" stroke-width="5"
+            stroke-linecap="round" stroke-linejoin="round"
+            stroke-dasharray="72"
+            style="filter:blur(3px)"/>
+          <!-- crisp line -->
+          <polyline id="aarav-logo-line" points="${POINTS}"
+            fill="none" stroke="#34d399" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round"
+            stroke-dasharray="72"/>
+          <!-- live dot at tip -->
+          <circle id="aarav-logo-dot" cx="${DOT_CX}" cy="${DOT_CY}" r="2.2" fill="#34d399"/>
+        `;
+        return svg;
+      }
+
+      function inject() {
+        const header = document.querySelector('header');
+        if (!header) return false;
+        // First child of the left-side flex group inside header
+        const leftGroup = header.querySelector('div > div.flex.items-center');
+        if (!leftGroup) return false;
+        const existing = leftGroup.firstElementChild;
+        if (!existing || existing.getAttribute('data-custom-logo')) return false;
+        existing.replaceWith(buildLogo());
+        return true;
+      }
+
+      if (!inject()) {
+        const obs = new MutationObserver(function () {
+          if (inject()) obs.disconnect();
+        });
+        obs.observe(document.body, { childList: true, subtree: true });
+      }
     })();
   </script>
 </body>
