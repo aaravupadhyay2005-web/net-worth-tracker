@@ -107,14 +107,9 @@ body {
   padding-bottom: 80px !important;
 }
 
-/* Mobile: clip header subtitle to one line so it doesn't wrap messily */
-@media (max-width: 639px) {
-  header .leading-none > div:last-child {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
-  }
+/* Hide header subtitle — clock already shown in the pill on the right */
+header .leading-none > div:last-child {
+  display: none;
 }
   </style>
 </head>
