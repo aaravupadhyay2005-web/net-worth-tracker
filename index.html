@@ -97,6 +97,11 @@ body {
   to { opacity: 1; transform: translate(-50%, 0); }
 }
 
+@keyframes customMarquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
 /* Adding padding to root so nothing gets hidden behind nav */
 #root {
   padding-bottom: 80px !important;
@@ -195,17 +200,41 @@ Error generating stack: `+o.message+`
     (function() {
       // Observe the body for changes since React renders dynamically
       const observer = new MutationObserver((mutations) => {
-        // Find elements that look like stock cards OR marquee pills
-        const items = document.querySelectorAll('.group, .rounded-full.whitespace-nowrap');
+        // Find elements that look like stock cards OR ANY marquee/top-row pills
+        // Top row indices have `.rounded-full.border` but not whitespace-nowrap
+        const items = document.querySelectorAll('.group, .rounded-full.border');
         
         items.forEach(el => {
+          // If it's the container for the top row indices, transform it into a marquee
+          if (el.classList.contains('rounded-full') && el.parentElement && el.parentElement.classList.contains('overflow-x-auto')) {
+            const parent = el.parentElement;
+            if (!parent.dataset.customMarqueeAdded) {
+              parent.dataset.customMarqueeAdded = "true";
+              
+              // Change from scrollable to animated marquee
+              parent.classList.remove('overflow-x-auto', 'overscroll-x-contain');
+              parent.classList.add('w-max', 'flex-nowrap');
+              parent.style.animation = 'customMarquee 25s linear infinite';
+              parent.style.display = 'flex';
+              
+              // Duplicate children so the marquee loops seamlessly
+              const children = Array.from(parent.children);
+              children.forEach(child => {
+                const clone = child.cloneNode(true);
+                // Mark clone so it doesn't get double processed by the observer
+                clone.dataset.customModsAdded = "true";
+                parent.appendChild(clone);
+              });
+            }
+          }
+
           if (!el.dataset.customModsAdded) {
             el.dataset.customModsAdded = "true";
             
             const text = el.innerText || "";
             
-            // Skip USD/INR or empty
-            if (text.includes('USD/INR') || text.trim() === '') return;
+            // Skip USD/INR, empty, or UI elements that aren't stocks (like "SIP" tag)
+            if (text.includes('USD/INR') || text.trim() === '' || text.trim() === 'SIP' || text.trim() === 'Direct' || text.trim() === 'Regular') return;
             
             // Detect Country
             let isIndia = false;
@@ -222,7 +251,7 @@ Error generating stack: `+o.message+`
             // 1. Add Flag
             if (flag) {
               if (el.classList.contains('rounded-full')) {
-                // It's a pill in the marquee, prepend the flag
+                // It's a pill (top row or marquee), prepend the flag
                 const flagSpan = document.createElement('span');
                 flagSpan.innerText = flag + ' ';
                 flagSpan.style.marginRight = '2px';
@@ -243,25 +272,29 @@ Error generating stack: `+o.message+`
             }
             
             // 2. Make it look clickable & Add listener
-            // Only make it clickable if it seems like a specific stock/index (not a generic stats card)
+            // Only make it clickable if it seems like a specific stock/index
             const isClickableCard = el.classList.contains('rounded-full') || text.match(/\b[A-Z]{2,6}(?:\.NS|\.BO)?\b/);
             
-            if (isClickableCard) {
+            if (isClickableCard && (isIndia || isUS)) {
               el.style.cursor = 'pointer';
               el.addEventListener('click', (e) => {
                 let ticker = null;
                 const words = text.split(/\s+/);
                 if (words.length > 0) {
-                  let firstWord = words[0].trim().replace(/[^A-Za-z0-9&]/g, '');
-                  if (firstWord === 'NIFTY') ticker = '^NSEI';
-                  else if (firstWord === 'SENSEX') ticker = '^BSESN';
-                  else if (firstWord === 'SP' || text.includes('S&P')) ticker = '^GSPC';
-                  else if (firstWord === 'NASDAQ') ticker = '^IXIC';
-                  else ticker = firstWord;
-                  
-                  // Auto-append .NS for Indian stocks if not an index
-                  if (isIndia && ticker && !ticker.startsWith('^') && !ticker.includes('.')) {
-                    ticker += '.NS';
+                  // extract first valid word
+                  let firstWord = text.match(/\b[A-Z0-9&]{2,10}\b/);
+                  if (firstWord) {
+                     firstWord = firstWord[0];
+                     if (firstWord === 'NIFTY') ticker = '^NSEI';
+                     else if (firstWord === 'SENSEX') ticker = '^BSESN';
+                     else if (firstWord === 'SP' || text.includes('S&P')) ticker = '^GSPC';
+                     else if (firstWord === 'NASDAQ') ticker = '^IXIC';
+                     else ticker = firstWord;
+                     
+                     // Auto-append .NS for Indian stocks if not an index
+                     if (isIndia && ticker && !ticker.startsWith('^') && !ticker.includes('.')) {
+                       ticker += '.NS';
+                     }
                   }
                 }
                 
