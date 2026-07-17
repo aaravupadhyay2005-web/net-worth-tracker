@@ -199,17 +199,39 @@ Error generating stack: `+o.message+`
         const cards = document.querySelectorAll('.group');
         
         cards.forEach(card => {
-          if (!card.dataset.clickableAdded) {
-            card.dataset.clickableAdded = "true";
+          if (!card.dataset.customModsAdded) {
+            card.dataset.customModsAdded = "true";
             
-            // Make it look clickable
+            // 1. Make it look clickable
             card.style.cursor = 'pointer';
+            const text = card.innerText || "";
             
-            // Add click listener
+            // 2. Add Country Flag (detect via currency symbol or ticker suffix)
+            let flag = "";
+            if (text.includes('₹') || text.includes('.NS') || text.includes('.BO') || text.includes('NSE') || text.includes('BSE')) {
+              flag = '🇮🇳';
+            } else if (text.includes('$') || text.includes('NYSE') || text.includes('NASDAQ')) {
+              flag = '🇺🇸';
+            }
+
+            if (flag) {
+              // Create a floating flag element in the top right corner of the card
+              card.style.position = 'relative';
+              const flagEl = document.createElement('div');
+              flagEl.innerText = flag;
+              flagEl.style.position = 'absolute';
+              flagEl.style.top = '12px';
+              flagEl.style.right = '12px';
+              flagEl.style.fontSize = '18px';
+              flagEl.style.pointerEvents = 'none'; // so it doesn't interfere with clicks
+              flagEl.style.filter = 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))';
+              card.appendChild(flagEl);
+            }
+            
+            // 3. Add click listener to open Yahoo Finance
             card.addEventListener('click', (e) => {
-              // Try to extract a ticker symbol (first uppercase word of 2-6 letters)
-              const text = card.innerText || "";
-              const tickerMatch = text.match(/\b[A-Z]{2,6}\b/);
+              // Try to extract a ticker symbol (uppercase words, potentially with .NS suffix)
+              const tickerMatch = text.match(/\b[A-Z]{2,6}(?:\.NS|\.BO)?\b/);
               const ticker = tickerMatch ? tickerMatch[0] : null;
               
               if (ticker) {
