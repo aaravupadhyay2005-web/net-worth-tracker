@@ -200,13 +200,12 @@ Error generating stack: `+o.message+`
     (function() {
       // Observe the body for changes since React renders dynamically
       const observer = new MutationObserver((mutations) => {
-        // Find elements that look like stock cards OR ANY marquee/top-row pills
-        // Top row indices have `.rounded-full.border` but not whitespace-nowrap
-        const items = document.querySelectorAll('.group, .rounded-full.border');
+        // Find ONLY marquee/top-row pills (ignore .group cards completely)
+        const items = document.querySelectorAll('.rounded-full.border');
         
         items.forEach(el => {
           // If it's the container for the top row indices, transform it into a marquee
-          if (el.classList.contains('rounded-full') && el.parentElement && el.parentElement.classList.contains('overflow-x-auto')) {
+          if (el.parentElement && el.parentElement.classList.contains('overflow-x-auto')) {
             const parent = el.parentElement;
             if (!parent.dataset.customMarqueeAdded) {
               parent.dataset.customMarqueeAdded = "true";
@@ -233,8 +232,8 @@ Error generating stack: `+o.message+`
             
             const text = el.innerText || "";
             
-            // Skip USD/INR, empty, or UI elements that aren't stocks (like "SIP" tag)
-            if (text.includes('USD/INR') || text.trim() === '' || text.trim() === 'SIP' || text.trim() === 'Direct' || text.trim() === 'Regular') return;
+            // Skip USD/INR, empty, or UI elements that aren't stocks (like "SIP" or mutual fund types)
+            if (text.includes('USD/INR') || text.trim() === '' || text.trim() === 'SIP' || text.trim() === 'Direct' || text.trim() === 'Regular' || text.includes('Offshore') || text.includes('Ext')) return;
             
             // Detect Country
             let isIndia = false;
@@ -245,43 +244,20 @@ Error generating stack: `+o.message+`
             } else if (text.includes('$') || text.match(/S\&P|NASDAQ|NYSE|VTI|VXUS|SMH|ICLN|URNM|AVGE|RSP|VWO|SCHD|VDC/i)) {
               isUS = true;
             }
-            
-            // Exclude Mutual Funds from getting flags (they have 'Direct' or 'Regular' in their card text)
-            if (text.includes('Direct') || text.includes('Regular') || text.includes('SIP')) {
-              isIndia = false;
-              isUS = false;
-            }
 
             const flag = isIndia ? '🇮🇳' : (isUS ? '🇺🇸' : '');
 
-            // 1. Add Flag
+            // 1. Add Flag (inline since they are all pills)
             if (flag) {
-              if (el.classList.contains('rounded-full')) {
-                // It's a pill (top row or marquee), prepend the flag
-                const flagSpan = document.createElement('span');
-                flagSpan.innerText = flag + ' ';
-                flagSpan.style.marginRight = '2px';
-                el.prepend(flagSpan);
-              } else {
-                // It's a card, absolute position top right
-                el.style.position = 'relative';
-                const flagEl = document.createElement('div');
-                flagEl.innerText = flag;
-                flagEl.style.position = 'absolute';
-                flagEl.style.top = '12px';
-                flagEl.style.right = '12px';
-                flagEl.style.fontSize = '18px';
-                flagEl.style.pointerEvents = 'none';
-                flagEl.style.filter = 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))';
-                el.appendChild(flagEl);
-              }
+              const flagSpan = document.createElement('span');
+              flagSpan.innerText = flag + ' ';
+              flagSpan.style.marginRight = '2px';
+              el.prepend(flagSpan);
             }
             
             // 2. Make it look clickable & Add listener
-            // Only make it clickable if it seems like a specific stock/index
-            const isClickableCard = el.classList.contains('rounded-full') || text.match(/\b[A-Z]{2,6}(?:\.NS|\.BO)?\b/);
-            
-            if (isClickableCard && (isIndia || isUS)) {
+            // All targeted items are now pills, so they are clickable
+            if (isIndia || isUS) {
               el.style.cursor = 'pointer';
               el.addEventListener('click', (e) => {
                 let ticker = null;
