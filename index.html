@@ -127,6 +127,82 @@ header .leading-none > div:last-child {
   }
 }
 
+/* ── Market status box enhancements ── */
+@keyframes mktGlow {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(16,185,129,0.18), inset 0 0 18px rgba(16,185,129,0.04); }
+  50%       { box-shadow: 0 0 0 1px rgba(16,185,129,0.4),  inset 0 0 28px rgba(16,185,129,0.09); }
+}
+@keyframes mktSweep {
+  0%   { transform: translateX(-120%); }
+  100% { transform: translateX(300%); }
+}
+@keyframes mktBarPulse {
+  0%, 100% { opacity: 0.7; }
+  50%       { opacity: 1; }
+}
+.mkt-open {
+  border-color: rgba(16,185,129,0.28) !important;
+  animation: mktGlow 2.8s ease-in-out infinite, translateY(-4px) !important;
+  /* keep the hover lift from the global rule */
+}
+.mkt-closed {
+  border-color: rgba(255,190,50,0.14) !important;
+}
+/* Progress track at bottom of box */
+.mkt-progress-track {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 3px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 0 0 18px 18px;
+  overflow: hidden;
+}
+.mkt-progress-fill {
+  height: 100%;
+  border-radius: 0 0 18px 18px;
+  background: linear-gradient(90deg, rgba(16,185,129,0.5), rgba(16,185,129,1));
+  transition: width 1s linear;
+  animation: mktBarPulse 2s ease-in-out infinite;
+  position: relative;
+}
+.mkt-closed .mkt-progress-fill {
+  background: linear-gradient(90deg, rgba(255,190,50,0.3), rgba(255,190,50,0.5));
+  animation: none;
+}
+/* Shimmer sweep inside OPEN box */
+.mkt-sweep {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 25%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.055), transparent);
+  animation: mktSweep 4s ease-in-out infinite;
+  pointer-events: none;
+}
+/* LIVE badge */
+.mkt-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: rgba(16,185,129,0.9);
+  background: rgba(16,185,129,0.1);
+  border: 1px solid rgba(16,185,129,0.25);
+  border-radius: 99px;
+  padding: 1px 6px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.mkt-live-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: rgba(16,185,129,1);
+  animation: pulseDot 1.2s infinite;
+  box-shadow: 0 0 5px rgba(16,185,129,0.7);
+  flex-shrink: 0;
+}
+
 /* Animated stock-chart logo */
 @keyframes logoPulse {
   0%, 100% { opacity: 0.55; r: 2.2px; }
@@ -409,6 +485,126 @@ Error generating stack: `+o.message+`
   </script>
 
   <script>
+    // ── Market status box visual enhancements ──
+    (function enhanceMarketBoxes() {
+      function getSessionPct(openH, openM, closeH, closeM, utcOffsetHours) {
+        var now = new Date();
+        var utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+        var localMs = utcMs + utcOffsetHours * 3600000;
+        var local = new Date(localMs);
+        var cur = local.getHours() * 3600 + local.getMinutes() * 60 + local.getSeconds();
+        var open  = openH  * 3600 + openM  * 60;
+        var close = closeH * 3600 + closeM * 60;
+        if (cur < open || cur > close) return 0;
+        return Math.min(100, ((cur - open) / (close - open)) * 100);
+      }
+
+      function inject() {
+        document.querySelectorAll('[class*="rounded-[18px]"]').forEach(function(box) {
+          if (box.dataset.mktEnhanced) return;
+          var text = box.innerText || '';
+          var isNSE  = text.includes('NSE INDIA');
+          var isNYSE = text.includes('NYSE USA');
+          if (!isNSE && !isNYSE) return;
+
+          box.dataset.mktEnhanced = 'true';
+
+          var isOpen = text.includes('OPEN NOW');
+
+          // ── State class ──
+          box.classList.add(isOpen ? 'mkt-open' : 'mkt-closed');
+          box.style.position = 'relative';
+          box.style.overflow = 'hidden';
+
+          // ── LIVE badge next to label ──
+          if (isOpen) {
+            var labelDiv = box.querySelector('[class*="tracking-[0.14em]"]');
+            if (labelDiv && !labelDiv.querySelector('.mkt-live-badge')) {
+              var badge = document.createElement('span');
+              badge.className = 'mkt-live-badge';
+              var dot = document.createElement('span');
+              dot.className = 'mkt-live-dot';
+              badge.appendChild(dot);
+              badge.appendChild(document.createTextNode('LIVE'));
+              labelDiv.appendChild(badge);
+            }
+          }
+
+          // ── Fix status row wrapping + style countdown ──
+          var statusRow = box.querySelector('[class*="flex items-center gap-2"]');
+          if (statusRow) {
+            statusRow.style.flexWrap = 'nowrap';
+            statusRow.style.alignItems = 'center';
+            statusRow.style.gap = '8px';
+            statusRow.querySelectorAll('span').forEach(function(s) {
+              // countdown spans contain digits + h/m/s
+              if (s.textContent && s.textContent.match(/\d+[hms]/)) {
+                s.style.fontSize = '12px';
+                s.style.fontFamily = "'JetBrains Mono', monospace";
+                s.style.color = isOpen ? 'rgba(110,231,183,0.85)' : 'rgba(255,190,50,0.7)';
+                s.style.whiteSpace = 'nowrap';
+              }
+              // OPEN NOW / CLOSED label
+              if (s.textContent.trim() === 'OPEN NOW' || s.textContent.trim() === 'CLOSED') {
+                s.style.fontSize = '14px';
+                s.style.letterSpacing = '0.04em';
+                s.style.whiteSpace = 'nowrap';
+              }
+            });
+          }
+
+          // ── Larger status dot ──
+          var dot = box.querySelector('[class*="h-2 w-2 rounded-full"]');
+          if (dot) {
+            dot.style.width = '9px';
+            dot.style.height = '9px';
+            dot.style.flexShrink = '0';
+          }
+
+          // ── Shimmer sweep (open only) ──
+          if (isOpen) {
+            var sweep = document.createElement('div');
+            sweep.className = 'mkt-sweep';
+            box.appendChild(sweep);
+          }
+
+          // ── Session progress bar ──
+          var track = document.createElement('div');
+          track.className = 'mkt-progress-track';
+          var fill = document.createElement('div');
+          fill.className = 'mkt-progress-fill';
+          fill.dataset.mktBar = isNSE ? 'nse' : 'nyse';
+          var pct = 0;
+          if (isOpen) {
+            pct = isNSE
+              ? getSessionPct(9, 15, 15, 30, 5.5)   // IST = UTC+5.5
+              : getSessionPct(9, 30, 16, 0, -4);     // EDT = UTC-4
+          }
+          fill.style.width = pct + '%';
+          track.appendChild(fill);
+          box.appendChild(track);
+        });
+      }
+
+      inject();
+      var obs = new MutationObserver(inject);
+      obs.observe(document.body, { childList: true, subtree: true });
+      setTimeout(function() { obs.disconnect(); }, 12000);
+
+      // Tick progress bars every second
+      setInterval(function() {
+        document.querySelectorAll('[data-mkt-bar]').forEach(function(fill) {
+          var box = fill.closest('[data-mkt-enhanced]');
+          if (!box || !box.classList.contains('mkt-open')) return;
+          var isNSE = fill.dataset.mktBar === 'nse';
+          var pct = isNSE
+            ? getSessionPct(9, 15, 15, 30, 5.5)
+            : getSessionPct(9, 30, 16, 0, -4);
+          fill.style.width = pct + '%';
+        });
+      }, 1000);
+    })();
+
     // Subtle flag backgrounds for NSE INDIA / NYSE USA market boxes
     (function addFlagBGs() {
       function inject() {
