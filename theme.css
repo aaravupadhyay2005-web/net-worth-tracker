@@ -1,0 +1,92 @@
+/* Premium Typography */
+body, html, #root {
+  font-family: 'Outfit', sans-serif !important;
+}
+
+.font-mono, .mono, .tabular-nums, 
+[class*="font-mono"], [class*="tabular-nums"] {
+  font-family: 'JetBrains Mono', monospace !important;
+}
+
+/* Base Body background enhancement */
+body {
+  background: radial-gradient(circle at 50% -20%, #1a1b26 0%, #08090B 100%) !important;
+}
+
+/* Card Hover Micro-Animations and Glows */
+.rounded-\[24px\], .rounded-\[20px\], .rounded-\[18px\], .rounded-\[16px\] {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.rounded-\[24px\]:hover, .rounded-\[20px\]:hover, .rounded-\[18px\]:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 20px 40px -15px rgba(52, 211, 153, 0.15),
+              0 0 20px -5px rgba(139, 92, 246, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Enhance existing gradients (Emerald & Violet to Cyber-Pastel) */
+.from-emerald-500\/10 {
+  --tw-gradient-from: rgba(45, 212, 191, 0.15) !important; /* Teal tint */
+}
+.text-emerald-200 {
+  color: #99f6e4 !important; /* Brighter teal */
+}
+.text-emerald-300 {
+  color: #5eead4 !important;
+}
+
+/* Floating Navigation Bar Styles */
+.custom-floating-nav {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  gap: 12px;
+  padding: 8px 12px;
+  background: rgba(18, 19, 26, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 99px;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5),
+              0 0 15px -5px rgba(255, 255, 255, 0.05);
+  animation: slideUpNav 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.custom-floating-nav a {
+  text-decoration: none;
+  color: rgba(255, 255, 255, 0.6);
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: 99px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.custom-floating-nav a:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.custom-floating-nav a.active {
+  color: #08090B;
+  background: white;
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+}
+
+@keyframes slideUpNav {
+  from { opacity: 0; transform: translate(-50%, 20px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* Adding padding to root so nothing gets hidden behind nav */
+#root {
+  padding-bottom: 80px !important;
+}
