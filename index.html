@@ -1215,6 +1215,87 @@ Error generating stack: `+o.message+`
     })();
   </script>
 
+
+  <script>
+    /* ── CountUp: animate old→new numeric values ── */
+    (function(){
+      'use strict';
+      var _anim = new WeakSet();
+
+      function parse(s) {
+        if (!s) return null;
+        // Match: optional sign + optional currency symbol + number-with-commas + optional suffix
+        var m = s.match(/^([+\-]?\s*[₹$€£¥]?\s*)([\d,]+(?:\.\d+)?)(.*)$/);
+        if (!m) return null;
+        var before = m[1], numStr = m[2], after = m[3];
+        var clean = numStr.replace(/,/g, '');
+        var val = parseFloat(clean);
+        if (isNaN(val)) return null;
+        var dec = (numStr.split('.')[1] || '').length;
+        // Indian fmt: 1,23,456 — second group from right is 2-digit
+        var indian = /\d,\d{2},/.test(numStr) || /^\d{1,2}(,\d{2})+$/.test(numStr);
+        return { before: before, after: after, val: val, dec: dec, indian: indian };
+      }
+
+      function fmtInt(intStr, indian) {
+        if (indian) {
+          if (intStr.length <= 3) return intStr;
+          var last3 = intStr.slice(-3);
+          var rest  = intStr.slice(0, -3);
+          return rest.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + last3;
+        }
+        return intStr.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      }
+
+      function fmt(val, p) {
+        var abs   = Math.abs(val).toFixed(p.dec);
+        var parts = abs.split('.');
+        var sign  = (p.before.indexOf('-') !== -1) ? '-' : (p.before.indexOf('+') !== -1 ? '+' : '');
+        var cur   = p.before.replace(/[+\-]/g, '');
+        var num   = fmtInt(parts[0], p.indian) + (parts[1] !== undefined ? '.' + parts[1] : '');
+        return sign + cur + num + p.after;
+      }
+
+      var _obs;
+      var _cfg = { subtree: true, characterData: true, characterDataOldValue: true };
+
+      function countUp(node, from, to, info) {
+        _anim.add(node);
+        var dur = 420;
+        var t0  = performance.now();
+        (function tick(now) {
+          var p  = Math.min((now - t0) / dur, 1);
+          var e  = 1 - Math.pow(1 - p, 3);   // ease-out cubic
+          var cur = from + (to - from) * e;
+          _obs.disconnect();
+          node.textContent = fmt(cur, info);
+          _obs.observe(document.body, _cfg);
+          if (p < 1) requestAnimationFrame(tick);
+          else        _anim.delete(node);
+        })(performance.now());
+      }
+
+      _obs = new MutationObserver(function(muts) {
+        for (var i = 0; i < muts.length; i++) {
+          var m  = muts[i];
+          var nd = m.target;
+          if (_anim.has(nd)) continue;
+          var oldS = m.oldValue   || '';
+          var newS = nd.textContent || '';
+          if (oldS === newS) continue;
+          var op = parse(oldS);
+          var np = parse(newS);
+          if (!op || !np) continue;
+          if (Math.abs(np.val - op.val) < 0.001) continue;
+          // Only animate when the surrounding label/symbol is unchanged
+          if (op.before !== np.before || op.after !== np.after) continue;
+          countUp(nd, op.val, np.val, np);
+        }
+      });
+
+      _obs.observe(document.body, _cfg);
+    })();
+  </script>
 </body>
 </html>
 
