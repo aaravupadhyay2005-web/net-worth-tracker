@@ -226,11 +226,11 @@ header .leading-none > div:last-child {
   100% { background: transparent; }
 }
 .price-flash-up {
-  animation: flashUp 0.65s ease-out forwards !important;
+  animation: flashUp 0.65s ease-out !important;
   border-radius: 3px;
 }
 .price-flash-down {
-  animation: flashDown 0.65s ease-out forwards !important;
+  animation: flashDown 0.65s ease-out !important;
   border-radius: 3px;
 }
 
@@ -720,7 +720,10 @@ Error generating stack: `+o.message+`
         if (!el || el === document.body) return;
         el.classList.remove('price-flash-up', 'price-flash-down');
         void el.offsetWidth; // reflow
-        el.classList.add(dir === 'up' ? 'price-flash-up' : 'price-flash-down');
+        var cls = dir === 'up' ? 'price-flash-up' : 'price-flash-down';
+        el.classList.add(cls);
+        // Remove after animation completes so background isn't left transparent
+        setTimeout(function() { el.classList.remove(cls); }, 750);
       }
 
       var obs = new MutationObserver(function(mutations) {
