@@ -1296,6 +1296,115 @@ Error generating stack: `+o.message+`
       _obs.observe(document.body, _cfg);
     })();
   </script>
+
+  <script>
+    /* ── Intro CountUp: P/L and Net Worth animate 0→real on first load ── */
+    (function(){
+      'use strict';
+      var DONE = 'data-intro-done';
+
+      /* ── formatters ── */
+      function fmtPL(v) {
+        var sign = v >= 0 ? '+' : '-';
+        var abs  = Math.abs(v).toFixed(2).split('.');
+        abs[0] = abs[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        return sign + '\u20b9' + abs.join('.');   // ₹
+      }
+      function fmtNW(v) {
+        var s = Math.round(Math.abs(v)).toString();
+        var last3 = s.slice(-3);
+        var rest  = s.slice(0, -3);
+        var body  = (rest ? rest.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' : '') + last3;
+        return '\u20b9' + body;
+      }
+      function parseVal(str) {
+        var m = str.match(/([\d,]+(?:\.\d+)?)/);
+        if (!m) return null;
+        var v = parseFloat(m[1].replace(/,/g, ''));
+        return (str.indexOf('-') !== -1) ? -v : v;
+      }
+
+      /* ── spring easing (overshoots ~8%, then settles) ── */
+      function spring(t) {
+        if (t <= 0) return 0;
+        if (t >= 1) return 1;
+        var c = (2 * Math.PI) / 3.8;
+        return 1 + Math.pow(2, -9 * t) * Math.sin((t * 9 - 0.9) * c) * -1;
+      }
+
+      /* ── scramble digits for a value magnitude ── */
+      function scramble(mag) {
+        var digits = Math.max(1, Math.round(Math.random() * mag));
+        return digits * (Math.random() > 0.5 ? 1 : -1);
+      }
+
+      function animate(node, target, fmtFn, scrambleDur, totalDur) {
+        if (node.getAttribute(DONE)) return;
+        node.setAttribute(DONE, '1');
+
+        var mag = Math.abs(target);
+        var t0  = null;
+
+        /* Phase 1 — scramble random numbers */
+        var scrambleId = setInterval(function() {
+          node.textContent = fmtFn(scramble(mag));
+        }, 55);
+
+        /* Phase 2 — spring CountUp after scramble phase */
+        setTimeout(function() {
+          clearInterval(scrambleId);
+          var springStart = null;
+          function tick(now) {
+            if (!springStart) springStart = now;
+            var p   = Math.min((now - springStart) / (totalDur - scrambleDur), 1);
+            var cur = target * spring(p);
+            node.textContent = fmtFn(cur);
+            if (p < 1) requestAnimationFrame(tick);
+            else node.textContent = fmtFn(target);
+          }
+          requestAnimationFrame(tick);
+        }, scrambleDur);
+      }
+
+      /* ── find + trigger ── */
+      function tryInit() {
+        var divs = document.querySelectorAll('div');
+        for (var i = 0; i < divs.length; i++) {
+          var label = divs[i].textContent.trim();
+
+          /* TODAY'S P/L */
+          if (label === "Today's P/L") {
+            var card = divs[i].parentElement;
+            if (!card) continue;
+            var vEl = card.querySelector('.font-mono');
+            if (!vEl || vEl.getAttribute(DONE)) continue;
+            var raw = vEl.textContent.trim();
+            var val = parseVal(raw);
+            if (!val && val !== 0) continue;
+            if (val === 0) continue;
+            animate(vEl, val, fmtPL, 700, 2000);
+          }
+
+          /* COMBINED NET WORTH */
+          if (label === 'COMBINED NET WORTH') {
+            var card2 = divs[i].parentElement;
+            if (!card2) continue;
+            var nwEl = card2.querySelector('.mono');
+            if (!nwEl || nwEl.getAttribute(DONE)) continue;
+            var raw2 = nwEl.textContent.trim();
+            var val2 = parseVal(raw2);
+            if (!val2 && val2 !== 0) continue;
+            if (val2 === 0) continue;
+            animate(nwEl, val2, fmtNW, 900, 2500);
+          }
+        }
+      }
+
+      /* Poll until React has rendered real values */
+      var _p = setInterval(tryInit, 150);
+      setTimeout(function(){ clearInterval(_p); }, 20000);
+    })();
+  </script>
 </body>
 </html>
 
