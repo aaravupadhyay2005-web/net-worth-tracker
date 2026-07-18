@@ -345,12 +345,17 @@ header .leading-none > div:last-child {
   margin-right: 8px !important;
 }
 
-/* ── Uniform pill height ── */
+/* ── Uniform pill shape + height ── */
+/* 9999px looks like a capsule on narrow pills, rectangle on wide ones.
+   Fixed 10px gives every pill the same consistent rounded-rectangle look. */
 [data-custom-marquee-added="true"] > *,
 .animate-marquee > span {
+  border-radius: 10px !important;
+  height: 34px !important;
   min-height: 34px !important;
   box-sizing: border-box !important;
   white-space: nowrap !important;
+  overflow: hidden !important;
 }
 
 /* ── "verifying" loading shimmer on unloaded pills ── */
