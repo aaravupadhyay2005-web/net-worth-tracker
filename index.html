@@ -1296,6 +1296,25 @@ Error generating stack: `+o.message+`
       _obs.observe(document.body, _cfg);
     })();
   </script>
+
+  <script>
+    /* ── Pass live NW + P/L to about page via URL hash ── */
+    (function(){
+      var link = document.querySelector('.custom-floating-nav a[href="about.html"]');
+      if (!link) return;
+      link.addEventListener('click', function(e){
+        var nwEl = document.querySelector('.mono.text-\\[34px\\]');
+        var plEl = document.querySelector('.font-mono.text-\\[15px\\]');
+        var nwRaw = nwEl ? nwEl.textContent.replace(/[₹,\s]/g,'').trim() : '';
+        var plRaw = plEl ? plEl.textContent.replace(/[₹,+\s]/g,'').trim() : '';
+        var nv = parseFloat(nwRaw), pv = parseFloat(plRaw);
+        if (!isNaN(nv) && !isNaN(pv)) {
+          link.href = 'about.html#nw=' + Math.round(nv) + '&pl=' + pv.toFixed(2)
+            + '&pu=' + encodeURIComponent(plEl ? (plEl.textContent.trim().startsWith('-') ? '-' : '+') : '+');
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
 
