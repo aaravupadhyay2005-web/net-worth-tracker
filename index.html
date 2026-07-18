@@ -345,9 +345,14 @@ header .leading-none > div:last-child {
   margin-right: 8px !important;
 }
 
-/* ── Uniform pill shape + height ── */
-/* 9999px looks like a capsule on narrow pills, rectangle on wide ones.
-   Fixed 10px gives every pill the same consistent rounded-rectangle look. */
+/* ── Uniform pill shape ── */
+/* border-radius:9999px is a capsule, so narrow pills look circular and
+   wide pills look rectangular. Fix ALL rounded-full+border pills site-wide
+   to a consistent 10px so every pill looks the same regardless of content width. */
+.rounded-full.border {
+  border-radius: 10px !important;
+}
+/* Marquee pills also get fixed height + overflow clip */
 [data-custom-marquee-added="true"] > *,
 .animate-marquee > span {
   border-radius: 10px !important;
