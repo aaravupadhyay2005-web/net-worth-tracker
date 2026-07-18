@@ -327,6 +327,42 @@ header .leading-none > div:last-child {
 #aarav-logo-dot  { animation: logoPulse 1.8s ease-in-out infinite; }
 #aarav-logo-glow { animation: logoDraw 4s ease-in-out infinite, logoGlow 1.8s ease-in-out infinite; }
 #aarav-logo-line { animation: logoDraw 4s ease-in-out infinite; }
+
+/* ── Seamless seam fix: margin-right replaces gap ── */
+/* Row 1 (our custom marquee) */
+[data-custom-marquee-added="true"] {
+  gap: 0 !important;
+}
+[data-custom-marquee-added="true"] > * {
+  margin-right: 8px !important;
+  flex-shrink: 0 !important;
+}
+/* Row 2 (React-built animate-marquee) */
+.animate-marquee {
+  gap: 0 !important;
+}
+.animate-marquee > span {
+  margin-right: 8px !important;
+}
+
+/* ── Uniform pill height ── */
+[data-custom-marquee-added="true"] > *,
+.animate-marquee > span {
+  min-height: 34px !important;
+  box-sizing: border-box !important;
+  white-space: nowrap !important;
+}
+
+/* ── "verifying" loading shimmer on unloaded pills ── */
+@keyframes verifyPulse {
+  0%, 100% { opacity: 0.25; }
+  50%       { opacity: 0.7; }
+}
+.pill-verifying-dots {
+  animation: verifyPulse 1.1s ease-in-out infinite;
+  letter-spacing: 0.15em;
+  font-size: 11px;
+}
   </style>
 </head>
 <body>
@@ -433,32 +469,96 @@ Error generating stack: `+o.message+`
               
               // ── Seamless marquee setup ──
               // 1. Outer wrapper: force true overflow clip, full width
-              const outer = parent.parentElement;
+              var outer = parent.parentElement;
               if (outer) {
                 outer.style.overflow = 'hidden';
                 outer.style.width = '100%';
                 outer.style.maxWidth = '100%';
               }
 
-              // 2. Strip all constraints from the track that fight translateX
+              // 2. Strip all constraints from the track
               parent.classList.remove('overflow-x-auto', 'overscroll-x-contain', 'touch-pan-x', 'scrollbar-none');
               parent.style.display = 'flex';
               parent.style.flexWrap = 'nowrap';
               parent.style.width = 'max-content';
               parent.style.maxWidth = 'none';
-              parent.style.margin = '0';          // kill mx-auto
-              parent.style.padding = '10px 0';   // top/bottom only — no side padding at seam
-              parent.style.gap = '8px';
+              parent.style.margin = '0';
+              parent.style.padding = '9px 0';
+              parent.style.gap = '0';           // gap handled by margin-right on children (seam fix)
               parent.style.willChange = 'transform';
-              parent.style.animation = 'customMarquee 28s linear infinite';
+              // Do NOT animate yet — wait for extra pills + sparklines + flags
 
-              // 3. Duplicate children so loop is seamless (exactly 2× original)
-              const children = Array.from(parent.children);
-              children.forEach(child => {
-                const clone = child.cloneNode(true);
-                clone.dataset.customModsAdded = "true";
-                parent.appendChild(clone);
+              // 3. Inject extra index pills (live-fetched) before cloning
+              var _extraTickers = [
+                { label: 'DOW', key: '^DJI', flag: '🇺🇸' },
+                { label: 'FTSE 100', key: '^FTSE', flag: '🇬🇧' },
+                { label: 'NIKKEI', key: '^N225', flag: '🇯🇵' },
+                { label: 'BTC', key: 'BTC-USD', flag: '' },
+                { label: 'GOLD', key: 'GC=F', flag: '' }
+              ];
+              _extraTickers.forEach(function(t) {
+                var pill = document.createElement('div');
+                pill.dataset.customModsAdded = 'true';
+                pill.dataset.extraPill = t.key;
+                pill.dataset.ticker = t.key;
+                pill.style.cssText = 'border-radius:9999px;border:1px solid rgba(255,255,255,0.1);padding:6px 14px;font-size:12px;font-family:"JetBrains Mono",monospace;display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,0.4);background:rgba(255,255,255,0.06);flex-shrink:0;white-space:nowrap;cursor:pointer;min-height:34px;box-sizing:border-box;';
+                var dotEl = document.createElement('span');
+                dotEl.style.cssText = 'width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.3);flex-shrink:0;';
+                var labelEl = document.createElement('span');
+                labelEl.textContent = (t.flag ? t.flag + ' ' : '') + t.label + ' ';
+                var valEl = document.createElement('span');
+                valEl.className = 'pill-verifying-dots';
+                valEl.textContent = '···';
+                pill.appendChild(dotEl);
+                pill.appendChild(labelEl);
+                pill.appendChild(valEl);
+                pill.addEventListener('click', function() { window.open('https://finance.yahoo.com/quote/' + t.key, '_blank'); });
+                parent.appendChild(pill);
+
+                // Fetch live price for this pill
+                (function(p, _dot, _val, ticker) {
+                  var _urls = [
+                    'https://corsproxy.io/?' + encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/' + ticker + '?interval=1d&range=2d'),
+                    'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/' + ticker + '?interval=1d&range=2d')
+                  ];
+                  function _try(i) {
+                    if (i >= _urls.length) return;
+                    fetch(_urls[i]).then(function(r){ return r.json(); }).then(function(data) {
+                      var meta = data && data.chart && data.chart.result && data.chart.result[0] && data.chart.result[0].meta;
+                      if (!meta || !meta.regularMarketPrice) { _try(i + 1); return; }
+                      var price = meta.regularMarketPrice;
+                      var prev = meta.previousClose || meta.chartPreviousClose || price;
+                      var pct = ((price - prev) / prev) * 100;
+                      var up = pct >= 0;
+                      var fmt = price >= 1000 ? price.toLocaleString('en-US', {maximumFractionDigits: 2}) : price.toFixed(2);
+                      var arrow = up ? '▲' : '▼';
+                      p.style.cssText = 'border-radius:9999px;border:1px solid ' + (up ? 'rgba(52,211,153,0.2)' : 'rgba(248,113,113,0.2)') + ';padding:6px 14px;font-size:12px;font-family:"JetBrains Mono",monospace;display:inline-flex;align-items:center;gap:6px;color:' + (up ? 'rgb(110,231,183)' : 'rgb(252,165,165)') + ';background:' + (up ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)') + ';flex-shrink:0;white-space:nowrap;cursor:pointer;min-height:34px;box-sizing:border-box;';
+                      _dot.style.background = up ? 'rgb(52,211,153)' : 'rgb(248,113,113)';
+                      _dot.style.animation = 'pulseDot 1.6s infinite';
+                      _val.className = '';
+                      _val.textContent = fmt + ' ' + arrow + Math.abs(pct).toFixed(2) + '%';
+                    }).catch(function(){ _try(i + 1); });
+                  }
+                  _try(0);
+                })(pill, dotEl, valEl, t.key);
               });
+
+              // 4. Delay clone so sparklines, flags, and extra pill prices are ready
+              setTimeout(function() {
+                if (parent.dataset.marqueeCloningDone) return;
+                parent.dataset.marqueeCloningDone = 'true';
+                // Remove any stale clones from earlier attempts
+                Array.from(parent.querySelectorAll('[data-clone-pill]')).forEach(function(s){ s.remove(); });
+                // Clone all pills (now with sparklines, flags, prices)
+                Array.from(parent.children).forEach(function(child) {
+                  var clone = child.cloneNode(true);
+                  clone.dataset.customModsAdded = 'true';
+                  clone.dataset.clonePill = 'true';
+                  parent.appendChild(clone);
+                });
+                // Start animation: 35s for ~9 original pills + 5 extras
+                parent.style.animation = 'customMarquee 38s linear infinite';
+              }, 6000);
             }
           }
 
@@ -1068,6 +1168,37 @@ Error generating stack: `+o.message+`
       var obs = new MutationObserver(inject);
       obs.observe(document.body, { childList: true, subtree: true });
       setTimeout(function() { obs.disconnect(); }, 12000);
+    })();
+  </script>
+
+  <script>
+    // ── "verifying" → animated loading dots ──
+    (function fixVerifyingText() {
+      function replaceVerifying(node) {
+        node.childNodes.forEach(function(child) {
+          if (child.nodeType === 3 && child.textContent.includes('verifying')) {
+            child.textContent = child.textContent.replace(/\s*--\s*•\s*verifying/g, ' ···');
+          } else if (child.nodeType === 1) {
+            replaceVerifying(child);
+          }
+        });
+      }
+      function scan() {
+        document.querySelectorAll('.rounded-full.border').forEach(function(pill) {
+          if (pill.textContent.includes('verifying')) {
+            replaceVerifying(pill);
+            // Style the dots span if present
+            pill.querySelectorAll('span').forEach(function(s) {
+              if (s.textContent === '···') {
+                s.className = 'pill-verifying-dots';
+              }
+            });
+          }
+        });
+      }
+      var _t = setInterval(scan, 350);
+      setTimeout(function() { clearInterval(_t); }, 60000);
+      scan();
     })();
   </script>
 
