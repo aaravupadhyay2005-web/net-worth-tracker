@@ -375,7 +375,8 @@ header .leading-none > div:last-child {
 }
   
 /* ── Live market-news terminal ticker ── */
-#marketNewsTicker{position:sticky;top:0;left:0;right:0;height:34px;margin-bottom:14px;z-index:1100;display:flex;align-items:center;background:rgba(7,9,13,.96);border-bottom:1px solid rgba(239,68,68,.28);box-shadow:0 5px 22px rgba(0,0,0,.28);font-family:Inter,system-ui,sans-serif;overflow:hidden}
+#marketNewsTicker{position:sticky;top:0;left:0;right:0;height:34px;z-index:1100;display:flex;align-items:center;background:rgba(7,9,13,.96);border-bottom:1px solid rgba(239,68,68,.28);box-shadow:0 5px 22px rgba(0,0,0,.28);font-family:Inter,system-ui,sans-serif;overflow:hidden}
+#marketNewsTicker:after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:rgba(255,255,255,.12);pointer-events:none}
 #marketNewsTicker .news-badge{height:100%;display:flex;align-items:center;gap:7px;padding:0 14px;background:linear-gradient(90deg,#991b1b,#dc2626);color:#fff;font-size:10px;font-weight:800;letter-spacing:.12em;white-space:nowrap;box-shadow:5px 0 15px rgba(0,0,0,.28);position:relative;z-index:2}
 #marketNewsTicker .news-badge i{width:6px;height:6px;border-radius:50%;background:#fecaca;box-shadow:0 0 8px #fff;animation:newsLivePulse 1.2s ease-in-out infinite}
 @keyframes newsLivePulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.7)}}
@@ -391,7 +392,7 @@ header .leading-none > div:last-child {
 #marketNewsTicker .news-refresh{height:100%;display:flex;align-items:center;padding:0 10px;color:rgba(255,255,255,.28);font:9px 'JetBrains Mono',monospace;white-space:nowrap;position:relative;z-index:2;background:linear-gradient(90deg,transparent,rgba(7,9,13,.96) 25%)}
 #marketNewsTicker .news-refresh.is-live{color:#34d399}
 @keyframes newsTickerScroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-body{padding-top:0!important}#marketNewsTicker~#root{padding-top:14px!important}
+body{padding-top:0!important}
 @media(max-width:640px){#marketNewsTicker .news-badge{padding:0 10px;font-size:9px}#marketNewsTicker .news-item{padding:0 15px;font-size:10px}#marketNewsTicker .news-refresh{display:none}}
 
 </style>
