@@ -1358,23 +1358,34 @@ Error generating stack: `+o.message+`
       var track=ticker.querySelector('.news-track'), status=ticker.querySelector('.news-refresh');
       function esc(v){return String(v||'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
       function ago(date){var d=Date.now()-new Date(date).getTime(),m=Math.max(1,Math.round(d/60000));return m<60?m+'m ago':Math.round(m/60)+'h ago'}
-      function parse(xml,cat){
-        var doc=new DOMParser().parseFromString(xml,'text/xml'),items=doc.querySelectorAll('item'),out=[];
+      function parse(items,cat){
+        var out=[];
         for(var i=0;i<items.length&&out.length<8;i++){
-          var title=items[i].querySelector('title'),link=items[i].querySelector('link'),date=items[i].querySelector('pubDate'),src=items[i].querySelector('source');
-          var t=title&&title.textContent.trim(); if(!t||t.length<18) continue;
-          out.push({cat:cat,title:t.replace(/\s+/g,' '),link:link?link.textContent.trim():'#',source:src?src.textContent.trim():'News',date:date?date.textContent:''});
+          var item=items[i]||{},t=String(item.title||'').trim();
+          if(!t||t.length<18) continue;
+          out.push({cat:cat,title:t.replace(/\s+/g,' '),link:item.link||'#',source:item.author||'Google News',date:item.pubDate||''});
         }
         return out;
       }
+      /* Direct RSS-to-JSON API: no browser XML parsing or multi-proxy delay. */
       async function get(url){
-        var urls=['https://corsproxy.io/?'+encodeURIComponent(url),'https://api.allorigins.win/raw?url='+encodeURIComponent(url)];
-        var last; for(var i=0;i<urls.length;i++) try{var r=await fetch(urls[i],{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status);return await r.text()}catch(e){last=e} throw last||Error('feed unavailable');
+        var api='https://api.rss2json.com/v1/api.json?rss_url='+encodeURIComponent(url)+'&_='+Date.now();
+        var controller=new AbortController(),timer=setTimeout(function(){controller.abort()},8000);
+        try{
+          var r=await fetch(api,{cache:'no-store',signal:controller.signal});
+          if(!r.ok) throw Error('HTTP '+r.status);
+          var data=await r.json();
+          if(data.status&&data.status!=='ok') throw Error(data.message||'feed unavailable');
+          return data.items||[];
+        }finally{clearTimeout(timer)}
       }
       function render(items){
-        if(!items.length) items=fallback;
+        var isFallback=!items.length;
+        if(isFallback) items=fallback;
         var html=items.map(function(n){return '<a class="news-item" href="'+esc(n.link||'#')+'" target="_blank" rel="noopener noreferrer"><b class="news-cat">'+esc(n.cat)+'</b><span>'+esc(n.title)+'</span><small class="news-source">'+esc(n.source)+'</small><small class="news-time">'+(n.date?esc(ago(n.date)):'LIVE')+'</small></a>'}).join('');
-        track.innerHTML=html+html;
+        /* Duplicate only real headlines for a seamless loop; never duplicate an error state. */
+        track.innerHTML=isFallback?html:html+html;
+        track.style.animation=isFallback?'none':'';
         track.style.animationDuration=Math.max(45,items.length*7)+'s';
       }
       async function refresh(){
@@ -1383,7 +1394,7 @@ Error generating stack: `+o.message+`
         await Promise.all(feeds.map(async function(f){try{var got=parse(await get(f.url),f.cat);got.forEach(function(n){var k=n.title.toLowerCase();if(!seen[k]){seen[k]=1;all.push(n)}})}catch(e){}}));
         render(all.length?all:fallback);
         status.textContent=all.length?'LIVE • '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'FEED RETRY';
-        if(all.length) status.classList.add('is-live'); else setTimeout(refresh,15000);
+        if(all.length) status.classList.add('is-live'); else setTimeout(refresh,10000);
       }
       render(fallback); refresh(); setInterval(refresh,60000);
     })();
