@@ -1343,13 +1343,13 @@ Error generating stack: `+o.message+`
       'use strict';
       if(document.getElementById('marketNewsTicker')) return;
       var feeds=[
-        {cat:'INDIA MARKETS',url:'https://news.google.com/rss/search?q=(Nifty+OR+Sensex+OR+NSE+OR+BSE)+(stocks+OR+market)+when%3A6h&hl=en-IN&gl=IN&ceid=IN:en'},
-        {cat:'GLOBAL MARKETS',url:'https://news.google.com/rss/search?q=(global+markets+OR+Wall+Street)+(stocks+OR+oil+OR+rates)+when%3A6h&hl=en-IN&gl=IN&ceid=IN:en'},
-        {cat:'GEOPOLITICS',url:'https://news.google.com/rss/search?q=(war+OR+ceasefire+OR+sanctions+OR+geopolitics)+markets+when%3A6h&hl=en-IN&gl=IN&ceid=IN:en'},
-        {cat:'ECONOMY / FX',url:'https://news.google.com/rss/search?q=(RBI+OR+rupee+OR+inflation+OR+Federal+Reserve)+markets+when%3A6h&hl=en-IN&gl=IN&ceid=IN:en'}
+        {cat:'INDIA MARKETS',url:'https://news.google.com/rss/search?q=(Nifty+OR+Sensex+OR+NSE+OR+BSE)+(stocks+OR+market)+when%3A3h&hl=en-IN&gl=IN&ceid=IN:en'},
+        {cat:'GLOBAL MARKETS',url:'https://news.google.com/rss/search?q=(global+markets+OR+Wall+Street)+(stocks+OR+oil+OR+rates)+when%3A3h&hl=en-IN&gl=IN&ceid=IN:en'},
+        {cat:'GEOPOLITICS',url:'https://news.google.com/rss/search?q=(war+OR+ceasefire+OR+sanctions+OR+geopolitics)+markets+when%3A3h&hl=en-IN&gl=IN&ceid=IN:en'},
+        {cat:'ECONOMY / FX',url:'https://news.google.com/rss/search?q=(RBI+OR+rupee+OR+inflation+OR+Federal+Reserve)+markets+when%3A3h&hl=en-IN&gl=IN&ceid=IN:en'}
       ];
       var fallback=[
-        {cat:'SYSTEM',title:'Waiting for live headlines — feed reconnecting',source:'Terminal'}
+        {cat:'SYSTEM',title:'Scanning live feeds for fresh market headlines',source:'Terminal'}
       ];
       var ticker=document.createElement('div');
       ticker.id='marketNewsTicker';
@@ -1359,11 +1359,12 @@ Error generating stack: `+o.message+`
       function esc(v){return String(v||'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
       function ago(date){var d=Date.now()-new Date(date).getTime(),m=Math.max(1,Math.round(d/60000));return m<60?m+'m ago':Math.round(m/60)+'h ago'}
       function parse(items,cat){
-        var out=[];
+        var out=[],now=Date.now(),maxAge=3*60*60*1000;
         for(var i=0;i<items.length&&out.length<8;i++){
-          var item=items[i]||{},t=String(item.title||'').trim();
-          if(!t||t.length<18) continue;
-          out.push({cat:cat,title:t.replace(/\s+/g,' '),link:item.link||'#',source:item.author||'Google News',date:item.pubDate||''});
+          var item=items[i]||{},t=String(item.title||'').trim(),stamp=item.pubDate?new Date(item.pubDate).getTime():0;
+          /* Google News can return stale matches despite when:3h; discard them client-side. */
+          if(!t||t.length<18||(!stamp||now-stamp>maxAge||now-stamp< -15*60*1000)) continue;
+          out.push({cat:cat,title:t.replace(/\s+/g,' '),link:item.link||'#',source:item.author||'Google News',date:item.pubDate});
         }
         return out;
       }
@@ -1386,14 +1387,14 @@ Error generating stack: `+o.message+`
         /* Duplicate only real headlines for a seamless loop; never duplicate an error state. */
         track.innerHTML=isFallback?html:html+html;
         track.style.animation=isFallback?'none':'';
-        track.style.animationDuration=Math.max(45,items.length*7)+'s';
+        track.style.animationDuration=Math.max(180,items.length*10)+'s';
       }
       async function refresh(){
         status.textContent='UPDATING'; status.classList.remove('is-live');
         var all=[],seen={};
         await Promise.all(feeds.map(async function(f){try{var got=parse(await get(f.url),f.cat);got.forEach(function(n){var k=n.title.toLowerCase();if(!seen[k]){seen[k]=1;all.push(n)}})}catch(e){}}));
         render(all.length?all:fallback);
-        status.textContent=all.length?'LIVE • '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'FEED RETRY';
+        status.textContent=all.length?'LIVE • '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'SCANNING';
         if(all.length) status.classList.add('is-live'); else setTimeout(refresh,10000);
       }
       render(fallback); refresh(); setInterval(refresh,60000);
