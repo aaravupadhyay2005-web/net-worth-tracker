@@ -1343,14 +1343,13 @@ Error generating stack: `+o.message+`
       'use strict';
       if(document.getElementById('marketNewsTicker')) return;
       var feeds=[
-        {cat:'INDIA MARKETS',url:'https://news.google.com/rss/search?q=Indian+stock+market+NSE+OR+BSE&hl=en-IN&gl=IN&ceid=IN:en'},
-        {cat:'GLOBAL MARKETS',url:'https://news.google.com/rss/search?q=global+markets+stocks+oil+rates&hl=en-IN&gl=IN&ceid=IN:en'},
-        {cat:'GEOPOLITICS',url:'https://news.google.com/rss/search?q=geopolitics+war+markets+trade&hl=en-IN&gl=IN&ceid=IN:en'},
-        {cat:'ECONOMY / FX',url:'https://news.google.com/rss/search?q=RBI+Fed+inflation+rupee+markets&hl=en-IN&gl=IN&ceid=IN:en'}
+        {cat:'INDIA MARKETS',url:'https://news.google.com/rss/search?q=(Nifty+OR+Sensex+OR+NSE+OR+BSE)+(stocks+OR+market)+when%3A6h&hl=en-IN&gl=IN&ceid=IN:en'},
+        {cat:'GLOBAL MARKETS',url:'https://news.google.com/rss/search?q=(global+markets+OR+Wall+Street)+(stocks+OR+oil+OR+rates)+when%3A6h&hl=en-IN&gl=IN&ceid=IN:en'},
+        {cat:'GEOPOLITICS',url:'https://news.google.com/rss/search?q=(war+OR+ceasefire+OR+sanctions+OR+geopolitics)+markets+when%3A6h&hl=en-IN&gl=IN&ceid=IN:en'},
+        {cat:'ECONOMY / FX',url:'https://news.google.com/rss/search?q=(RBI+OR+rupee+OR+inflation+OR+Federal+Reserve)+markets+when%3A6h&hl=en-IN&gl=IN&ceid=IN:en'}
       ];
       var fallback=[
-        {cat:'SYSTEM',title:'Live market headlines loading from current news feeds',source:'Terminal'},
-        {cat:'SYSTEM',title:'Indian equities, global markets, geopolitics, rates and FX are being monitored',source:'Terminal'}
+        {cat:'SYSTEM',title:'Waiting for live headlines — feed reconnecting',source:'Terminal'}
       ];
       var ticker=document.createElement('div');
       ticker.id='marketNewsTicker';
@@ -1384,9 +1383,9 @@ Error generating stack: `+o.message+`
         await Promise.all(feeds.map(async function(f){try{var got=parse(await get(f.url),f.cat);got.forEach(function(n){var k=n.title.toLowerCase();if(!seen[k]){seen[k]=1;all.push(n)}})}catch(e){}}));
         render(all.length?all:fallback);
         status.textContent=all.length?'LIVE • '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'FEED RETRY';
-        if(all.length) status.classList.add('is-live');
+        if(all.length) status.classList.add('is-live'); else setTimeout(refresh,15000);
       }
-      render(fallback); refresh(); setInterval(refresh,300000);
+      render(fallback); refresh(); setInterval(refresh,60000);
     })();
   </script>
 </body>
