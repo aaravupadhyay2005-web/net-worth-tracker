@@ -1358,8 +1358,8 @@ Error generating stack: `+o.message+`
       var track=ticker.querySelector('.news-track'), status=ticker.querySelector('.news-refresh');
       function esc(v){return String(v||'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
       function ago(date){var d=Date.now()-new Date(date).getTime(),m=Math.max(1,Math.round(d/60000));return m<60?m+'m ago':Math.round(m/60)+'h ago'}
-      function parse(items,cat){
-        var out=[],now=Date.now(),maxAge=3*60*60*1000;
+      function parse(items,cat,maxAgeHours){
+        var out=[],now=Date.now(),maxAge=(maxAgeHours||3)*60*60*1000;
         for(var i=0;i<items.length&&out.length<8;i++){
           var item=items[i]||{},t=String(item.title||'').trim(),stamp=item.pubDate?new Date(item.pubDate).getTime():0;
           /* Google News can return stale matches despite when:3h; discard them client-side. */
@@ -1387,12 +1387,17 @@ Error generating stack: `+o.message+`
         /* Duplicate only real headlines for a seamless loop; never duplicate an error state. */
         track.innerHTML=isFallback?html:html+html;
         track.style.animation=isFallback?'none':'';
-        track.style.animationDuration=Math.max(180,items.length*10)+'s';
+        track.style.animationDuration=Math.max(95,items.length*5)+'s';
       }
       async function refresh(){
         status.textContent='UPDATING'; status.classList.remove('is-live');
         var all=[],seen={};
-        await Promise.all(feeds.map(async function(f){try{var got=parse(await get(f.url),f.cat);got.forEach(function(n){var k=n.title.toLowerCase();if(!seen[k]){seen[k]=1;all.push(n)}})}catch(e){}}));
+        await Promise.all(feeds.map(async function(f){try{
+          var raw=await get(f.url),got=parse(raw,f.cat,3);
+          /* If no very recent story exists, keep real current-session headlines up to 12h old. */
+          if(!got.length) got=parse(raw,f.cat,12);
+          got.forEach(function(n){var k=n.title.toLowerCase();if(!seen[k]){seen[k]=1;all.push(n)}});
+        }catch(e){}}));
         render(all.length?all:fallback);
         status.textContent=all.length?'LIVE • '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'SCANNING';
         if(all.length) status.classList.add('is-live'); else setTimeout(refresh,10000);
