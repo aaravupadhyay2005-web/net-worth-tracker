@@ -373,7 +373,28 @@ header .leading-none > div:last-child {
   letter-spacing: 0.15em;
   font-size: 11px;
 }
-  </style>
+  
+/* ── Live market-news terminal ticker ── */
+#marketNewsTicker{position:fixed;top:0;left:0;right:0;height:34px;z-index:1100;display:flex;align-items:center;background:rgba(7,9,13,.96);border-bottom:1px solid rgba(239,68,68,.28);box-shadow:0 5px 22px rgba(0,0,0,.28);font-family:Inter,system-ui,sans-serif;overflow:hidden}
+#marketNewsTicker .news-badge{height:100%;display:flex;align-items:center;gap:7px;padding:0 14px;background:linear-gradient(90deg,#991b1b,#dc2626);color:#fff;font-size:10px;font-weight:800;letter-spacing:.12em;white-space:nowrap;box-shadow:5px 0 15px rgba(0,0,0,.28);position:relative;z-index:2}
+#marketNewsTicker .news-badge i{width:6px;height:6px;border-radius:50%;background:#fecaca;box-shadow:0 0 8px #fff;animation:newsLivePulse 1.2s ease-in-out infinite}
+@keyframes newsLivePulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.7)}}
+#marketNewsTicker .news-window{min-width:0;flex:1;height:100%;overflow:hidden;display:flex;align-items:center}
+#marketNewsTicker .news-track{display:flex;align-items:center;gap:0;white-space:nowrap;will-change:transform;animation:newsTickerScroll 70s linear infinite}
+#marketNewsTicker .news-track:hover{animation-play-state:paused}
+#marketNewsTicker .news-item{display:inline-flex;align-items:center;gap:8px;padding:0 24px;color:rgba(255,255,255,.78);font-size:11px;line-height:34px;cursor:pointer;text-decoration:none}
+#marketNewsTicker .news-item:hover{color:#fff;background:rgba(255,255,255,.05)}
+#marketNewsTicker .news-item:after{content:'◆';color:rgba(239,68,68,.72);font-size:7px;margin-left:14px}
+#marketNewsTicker .news-cat{color:#5eead4;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:800;letter-spacing:.08em}
+#marketNewsTicker .news-source{color:rgba(255,255,255,.3);font-size:9px}
+#marketNewsTicker .news-time{color:rgba(255,255,255,.28);font-family:'JetBrains Mono',monospace;font-size:9px}
+#marketNewsTicker .news-refresh{height:100%;display:flex;align-items:center;padding:0 10px;color:rgba(255,255,255,.28);font:9px 'JetBrains Mono',monospace;white-space:nowrap;position:relative;z-index:2;background:linear-gradient(90deg,transparent,rgba(7,9,13,.96) 25%)}
+#marketNewsTicker .news-refresh.is-live{color:#34d399}
+@keyframes newsTickerScroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+body{padding-top:34px!important}
+@media(max-width:640px){#marketNewsTicker .news-badge{padding:0 10px;font-size:9px}#marketNewsTicker .news-item{padding:0 15px;font-size:10px}#marketNewsTicker .news-refresh{display:none}}
+
+</style>
 </head>
 <body>
   <nav class="custom-floating-nav">
@@ -1313,6 +1334,59 @@ Error generating stack: `+o.message+`
             + '&pu=' + encodeURIComponent(plEl ? (plEl.textContent.trim().startsWith('-') ? '-' : '+') : '+');
         }
       });
+    })();
+  </script>
+
+  <script>
+    /* ── Live news terminal ticker ── */
+    (function(){
+      'use strict';
+      if(document.getElementById('marketNewsTicker')) return;
+      var feeds=[
+        {cat:'INDIA MARKETS',url:'https://news.google.com/rss/search?q=Indian+stock+market+NSE+OR+BSE&hl=en-IN&gl=IN&ceid=IN:en'},
+        {cat:'GLOBAL MARKETS',url:'https://news.google.com/rss/search?q=global+markets+stocks+oil+rates&hl=en-IN&gl=IN&ceid=IN:en'},
+        {cat:'GEOPOLITICS',url:'https://news.google.com/rss/search?q=geopolitics+war+markets+trade&hl=en-IN&gl=IN&ceid=IN:en'},
+        {cat:'ECONOMY / FX',url:'https://news.google.com/rss/search?q=RBI+Fed+inflation+rupee+markets&hl=en-IN&gl=IN&ceid=IN:en'}
+      ];
+      var fallback=[
+        {cat:'SYSTEM',title:'Live market headlines loading from current news feeds',source:'Terminal'},
+        {cat:'SYSTEM',title:'Indian equities, global markets, geopolitics, rates and FX are being monitored',source:'Terminal'}
+      ];
+      var ticker=document.createElement('div');
+      ticker.id='marketNewsTicker';
+      ticker.innerHTML='<div class="news-badge"><i></i>LIVE NEWS</div><div class="news-window"><div class="news-track"></div></div><div class="news-refresh">CONNECTING</div>';
+      document.body.insertBefore(ticker,document.body.firstChild);
+      var track=ticker.querySelector('.news-track'), status=ticker.querySelector('.news-refresh');
+      function esc(v){return String(v||'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+      function ago(date){var d=Date.now()-new Date(date).getTime(),m=Math.max(1,Math.round(d/60000));return m<60?m+'m ago':Math.round(m/60)+'h ago'}
+      function parse(xml,cat){
+        var doc=new DOMParser().parseFromString(xml,'text/xml'),items=doc.querySelectorAll('item'),out=[];
+        for(var i=0;i<items.length&&out.length<8;i++){
+          var title=items[i].querySelector('title'),link=items[i].querySelector('link'),date=items[i].querySelector('pubDate'),src=items[i].querySelector('source');
+          var t=title&&title.textContent.trim(); if(!t||t.length<18) continue;
+          out.push({cat:cat,title:t.replace(/\s+/g,' '),link:link?link.textContent.trim():'#',source:src?src.textContent.trim():'News',date:date?date.textContent:''});
+        }
+        return out;
+      }
+      async function get(url){
+        var urls=['https://corsproxy.io/?'+encodeURIComponent(url),'https://api.allorigins.win/raw?url='+encodeURIComponent(url)];
+        var last; for(var i=0;i<urls.length;i++) try{var r=await fetch(urls[i],{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status);return await r.text()}catch(e){last=e} throw last||Error('feed unavailable');
+      }
+      function render(items){
+        if(!items.length) items=fallback;
+        var html=items.map(function(n){return '<a class="news-item" href="'+esc(n.link||'#')+'" target="_blank" rel="noopener noreferrer"><b class="news-cat">'+esc(n.cat)+'</b><span>'+esc(n.title)+'</span><small class="news-source">'+esc(n.source)+'</small><small class="news-time">'+(n.date?esc(ago(n.date)):'LIVE')+'</small></a>'}).join('');
+        track.innerHTML=html+html;
+        track.style.animationDuration=Math.max(45,items.length*7)+'s';
+      }
+      async function refresh(){
+        status.textContent='UPDATING'; status.classList.remove('is-live');
+        var all=[],seen={};
+        await Promise.all(feeds.map(async function(f){try{var got=parse(await get(f.url),f.cat);got.forEach(function(n){var k=n.title.toLowerCase();if(!seen[k]){seen[k]=1;all.push(n)}})}catch(e){}}));
+        render(all.length?all:fallback);
+        status.textContent=all.length?'LIVE • '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'FEED RETRY';
+        if(all.length) status.classList.add('is-live');
+      }
+      render(fallback); refresh(); setInterval(refresh,300000);
     })();
   </script>
 </body>
