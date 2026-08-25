@@ -375,15 +375,15 @@ header .leading-none > div:last-child {
 }
   
 /* ── Live market-news terminal ticker ── */
-#marketNewsTicker{position:sticky;top:0;left:0;right:0;height:42px;z-index:1100;display:flex;align-items:center;background:linear-gradient(90deg,rgba(20,8,10,.98),rgba(7,9,13,.98) 38%,rgba(7,9,13,.96));border-bottom:1px solid rgba(239,68,68,.38);box-shadow:0 5px 22px rgba(0,0,0,.34);font-family:Inter,system-ui,sans-serif;overflow:hidden}
+#marketNewsTicker{position:sticky;top:0;left:0;right:0;height:68px;z-index:1100;display:grid;grid-template-columns:max-content minmax(0,1fr) max-content;grid-template-rows:40px 28px;background:linear-gradient(90deg,rgba(20,8,10,.98),rgba(7,9,13,.98) 38%,rgba(7,9,13,.96));border-bottom:1px solid rgba(239,68,68,.38);box-shadow:0 5px 22px rgba(0,0,0,.34);font-family:Inter,system-ui,sans-serif;overflow:hidden}
 #marketNewsTicker:after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:rgba(255,255,255,.12);pointer-events:none}
-#marketNewsTicker .news-badge{height:100%;display:flex;align-items:center;gap:7px;padding:0 14px;background:linear-gradient(90deg,#991b1b,#dc2626);color:#fff;font-size:10px;font-weight:800;letter-spacing:.12em;white-space:nowrap;box-shadow:5px 0 15px rgba(0,0,0,.28);position:relative;z-index:2}
+#marketNewsTicker .news-badge{grid-row:1/3;height:100%;display:flex;align-items:center;gap:7px;padding:0 14px;background:linear-gradient(90deg,#991b1b,#dc2626);color:#fff;font-size:10px;font-weight:800;letter-spacing:.12em;white-space:nowrap;box-shadow:5px 0 15px rgba(0,0,0,.28);position:relative;z-index:2}
 #marketNewsTicker .news-badge i{width:6px;height:6px;border-radius:50%;background:#fecaca;box-shadow:0 0 8px #fff;animation:newsLivePulse 1.2s ease-in-out infinite}
 @keyframes newsLivePulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.7)}}
-#marketNewsTicker .news-window{min-width:0;flex:1;height:100%;overflow:hidden;display:flex;align-items:center}
+#marketNewsTicker .news-window{min-width:0;height:40px;overflow:hidden;display:flex;align-items:center;background:linear-gradient(90deg,rgba(220,38,38,.12),transparent 65%)}
 #marketNewsTicker .news-track{display:flex;align-items:center;gap:0;white-space:nowrap;will-change:transform;animation:newsTickerScroll 70s linear infinite}
 #marketNewsTicker .news-track:hover{animation-play-state:paused}
-#marketNewsTicker .news-item{display:inline-flex;align-items:center;gap:9px;padding:0 24px;color:rgba(255,255,255,.78);font-size:11px;line-height:42px;cursor:pointer;text-decoration:none;min-height:42px}
+#marketNewsTicker .news-item{display:inline-flex;align-items:center;gap:9px;padding:0 20px;color:rgba(255,255,255,.78);font-size:11px;line-height:40px;cursor:pointer;text-decoration:none;min-height:40px}
 #marketNewsTicker .news-item:hover{color:#fff;background:rgba(255,255,255,.05)}
 #marketNewsTicker .news-item:after{content:'◆';color:rgba(239,68,68,.72);font-size:7px;margin-left:14px}
 #marketNewsTicker .news-cat{color:#5eead4;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:800;letter-spacing:.08em}
@@ -392,12 +392,19 @@ header .leading-none > div:last-child {
 #marketNewsTicker .news-item.flash{animation:newsFlashIn .45s ease-out}
 #marketNewsTicker .news-source{color:rgba(255,255,255,.3);font-size:9px}
 #marketNewsTicker .news-time{color:rgba(255,255,255,.28);font-family:'JetBrains Mono',monospace;font-size:9px}
-#marketNewsTicker .news-refresh{height:100%;display:flex;align-items:center;padding:0 10px;color:rgba(255,255,255,.28);font:9px 'JetBrains Mono',monospace;white-space:nowrap;position:relative;z-index:2;background:linear-gradient(90deg,transparent,rgba(7,9,13,.96) 25%)}
+#marketNewsTicker .news-refresh{height:40px;display:flex;align-items:center;padding:0 10px;color:rgba(255,255,255,.28);font:9px 'JetBrains Mono',monospace;white-space:nowrap;position:relative;z-index:2;background:linear-gradient(90deg,transparent,rgba(7,9,13,.96) 25%)}
 #marketNewsTicker .news-refresh.is-live{color:#34d399}
+#marketNewsTicker .news-quotes{grid-column:2/4;min-width:0;height:28px;overflow:hidden;border-top:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3)}
+#marketNewsTicker .quote-track{display:flex;align-items:center;width:max-content;height:28px;animation:quoteTape 32s linear infinite}
+#marketNewsTicker .quote{display:inline-flex;align-items:center;gap:6px;padding:0 18px;color:#9ca3af;font:10px 'JetBrains Mono',monospace;white-space:nowrap}
+#marketNewsTicker .quote strong{color:#e5e7eb;font-weight:700}
+#marketNewsTicker .quote.up strong{color:#34d399}
+#marketNewsTicker .quote.down strong{color:#f87171}
 @keyframes newsTickerScroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 @keyframes newsFlashIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+@keyframes quoteTape{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 body{padding-top:0!important}
-@media(max-width:640px){#marketNewsTicker{height:40px}#marketNewsTicker .news-badge{padding:0 10px;font-size:9px}#marketNewsTicker .news-item{padding:0 15px;font-size:10px;line-height:40px;min-height:40px}#marketNewsTicker .news-refresh{display:none}}
+@media(max-width:640px){#marketNewsTicker{height:64px;grid-template-rows:38px 26px}#marketNewsTicker .news-badge{padding:0 10px;font-size:9px}#marketNewsTicker .news-window,#marketNewsTicker .news-refresh{height:38px}#marketNewsTicker .news-item{padding:0 12px;font-size:10px;line-height:38px;min-height:38px}#marketNewsTicker .news-refresh{display:none}#marketNewsTicker .news-quotes{grid-column:2/4;height:26px}.quote{padding:0 11px!important;font-size:9px!important}}
 
 
 /* Compact live-status indicator replacing the oversized status pill */
@@ -1364,10 +1371,22 @@ Error generating stack: `+o.message+`
       ];
       var ticker=document.createElement('div');
       ticker.id='marketNewsTicker';
-      ticker.innerHTML='<div class="news-badge"><i></i>LIVE FLASH</div><div class="news-window"><div class="news-track"></div></div><div class="news-refresh">CONNECTING</div>';
+      ticker.innerHTML='<div class="news-badge"><i></i>LIVE FLASH</div><div class="news-window"><div class="news-track"></div></div><div class="news-refresh">CONNECTING</div><div class="news-quotes"><div class="quote-track"></div></div>';
       document.body.insertBefore(ticker,document.body.firstChild);
-      var track=ticker.querySelector('.news-track'), status=ticker.querySelector('.news-refresh');
+      var track=ticker.querySelector('.news-track'), status=ticker.querySelector('.news-refresh'), quoteTrack=ticker.querySelector('.quote-track');
       var fallbackIndex=0, fallbackTimer;
+      var quoteTape=[
+        {name:'NIFTY 50',value:'LIVE',dir:'up'},
+        {name:'SENSEX',value:'LIVE',dir:'up'},
+        {name:'USD/INR',value:'LIVE',dir:'up'},
+        {name:'S&P 500',value:'LIVE',dir:'up'},
+        {name:'GOLD / MCX',value:'LIVE',dir:'up'}
+      ];
+      function renderQuotes(){
+        var html=quoteTape.map(function(q){return '<span class="quote '+esc(q.dir)+'"><strong>● '+esc(q.name)+'</strong><span>'+esc(q.value)+'</span></span>'}).join('');
+        quoteTrack.innerHTML=html+html;
+      }
+      renderQuotes();
       function esc(v){return String(v||'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
       function ago(date){var d=Date.now()-new Date(date).getTime(),m=Math.max(1,Math.round(d/60000));return m<60?m+'m ago':Math.round(m/60)+'h ago'}
       function parse(items,cat,maxAgeHours){
