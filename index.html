@@ -388,7 +388,7 @@ header .leading-none > div:last-child {
 #marketNewsTicker .news-item:after{content:'◆';color:rgba(239,68,68,.72);font-size:7px;margin-left:14px}
 #marketNewsTicker .news-cat{color:#5eead4;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:800;letter-spacing:.08em}
 #marketNewsTicker .news-item.flash .news-cat{color:#fbbf24}
-#marketNewsTicker .news-item.flash span{color:rgba(255,255,255,.9);font-weight:600}
+#marketNewsTicker .news-item.flash span.news-title{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:rgba(255,255,255,.9);font-weight:600;flex:1}
 #marketNewsTicker .news-item.flash{animation:newsFlashIn .65s cubic-bezier(.2,.8,.2,1)}
 #marketNewsTicker .news-source{color:rgba(255,255,255,.3);font-size:9px}
 #marketNewsTicker .news-time{color:rgba(255,255,255,.28);font-family:'JetBrains Mono',monospace;font-size:9px}
@@ -404,7 +404,7 @@ header .leading-none > div:last-child {
 @keyframes newsFlashIn{0%{opacity:0;transform:translateX(42px);filter:blur(2px)}65%{opacity:1;transform:translateX(-3px);filter:blur(0)}100%{opacity:1;transform:translateX(0)}}
 @keyframes quoteTape{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 body{padding-top:0!important}
-@media(max-width:640px){#marketNewsTicker{height:64px;grid-template-rows:38px 26px}#marketNewsTicker .news-badge{padding:0 10px;font-size:9px}#marketNewsTicker .news-window,#marketNewsTicker .news-refresh{height:38px}#marketNewsTicker .news-item{padding:0 12px;font-size:10px;line-height:38px;min-height:38px}#marketNewsTicker .news-refresh{display:none}#marketNewsTicker .news-quotes{grid-column:2/4;height:26px}.quote{padding:0 11px!important;font-size:9px!important}}
+@media(max-width:640px){#marketNewsTicker{height:64px;grid-template-rows:38px 26px}#marketNewsTicker .news-badge{padding:0 10px;font-size:9px}#marketNewsTicker .news-window,#marketNewsTicker .news-refresh{height:38px}#marketNewsTicker .news-item{padding:0 12px;font-size:10px;line-height:38px;min-height:38px;gap:6px}#marketNewsTicker .news-item .news-source,#marketNewsTicker .news-item .news-time{display:none}#marketNewsTicker .news-refresh{display:none}#marketNewsTicker .news-quotes{grid-column:2/4;height:26px}.quote{padding:0 11px!important;font-size:9px!important}}
 
 
 /* Compact live-status indicator replacing the oversized status pill */
@@ -1419,9 +1419,16 @@ Error generating stack: `+o.message+`
         flashItems=items.slice();
         flashIndex=0;
         clearInterval(fallbackTimer);
+        function flashTitle(title){
+          var t=String(title||'').replace(/\s+/g,' ').trim();
+          /* Drop the syndicated source suffix first; the source is shown separately. */
+          t=t.replace(/\s+[-|–—]\s+[^-|–—]{2,40}$/,'').trim();
+          var limit=window.innerWidth<=640?54:92;
+          return t.length>limit?t.slice(0,limit-1).trim()+'…':t;
+        }
         function showFlash(){
           var n=flashItems[flashIndex%flashItems.length];
-          track.innerHTML='<a class="news-item flash" href="'+esc(n.link||'#')+'" '+(n.link&&n.link!=='#'?'target="_blank" rel="noopener noreferrer"':'onclick="return false"')+'><b class="news-cat">'+esc(n.cat)+'</b><span>'+esc(n.title)+'</span><small class="news-source">'+esc(n.source)+'</small><small class="news-time">'+(n.date?esc(ago(n.date)):'LIVE')+'</small></a>';
+          track.innerHTML='<a class="news-item flash" href="'+esc(n.link||'#')+'" '+(n.link&&n.link!=='#'?'target="_blank" rel="noopener noreferrer"':'onclick="return false"')+'><b class="news-cat">'+esc(n.cat)+'</b><span class="news-title">'+esc(flashTitle(n.title))+'</span><small class="news-source">'+esc(n.source)+'</small><small class="news-time">'+(n.date?esc(ago(n.date)):'LIVE')+'</small></a>';
           flashIndex++;
         }
         showFlash();
