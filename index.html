@@ -375,7 +375,7 @@ header .leading-none > div:last-child {
 }
   
 /* ── Live market-news terminal ticker ── */
-#marketNewsTicker{position:sticky;top:0;left:0;right:0;height:34px;z-index:1100;display:flex;align-items:center;background:rgba(7,9,13,.96);border-bottom:1px solid rgba(239,68,68,.28);box-shadow:0 5px 22px rgba(0,0,0,.28);font-family:Inter,system-ui,sans-serif;overflow:hidden}
+#marketNewsTicker{position:sticky;top:0;left:0;right:0;height:42px;z-index:1100;display:flex;align-items:center;background:linear-gradient(90deg,rgba(20,8,10,.98),rgba(7,9,13,.98) 38%,rgba(7,9,13,.96));border-bottom:1px solid rgba(239,68,68,.38);box-shadow:0 5px 22px rgba(0,0,0,.34);font-family:Inter,system-ui,sans-serif;overflow:hidden}
 #marketNewsTicker:after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:rgba(255,255,255,.12);pointer-events:none}
 #marketNewsTicker .news-badge{height:100%;display:flex;align-items:center;gap:7px;padding:0 14px;background:linear-gradient(90deg,#991b1b,#dc2626);color:#fff;font-size:10px;font-weight:800;letter-spacing:.12em;white-space:nowrap;box-shadow:5px 0 15px rgba(0,0,0,.28);position:relative;z-index:2}
 #marketNewsTicker .news-badge i{width:6px;height:6px;border-radius:50%;background:#fecaca;box-shadow:0 0 8px #fff;animation:newsLivePulse 1.2s ease-in-out infinite}
@@ -383,19 +383,21 @@ header .leading-none > div:last-child {
 #marketNewsTicker .news-window{min-width:0;flex:1;height:100%;overflow:hidden;display:flex;align-items:center}
 #marketNewsTicker .news-track{display:flex;align-items:center;gap:0;white-space:nowrap;will-change:transform;animation:newsTickerScroll 70s linear infinite}
 #marketNewsTicker .news-track:hover{animation-play-state:paused}
-#marketNewsTicker .news-item{display:inline-flex;align-items:center;gap:8px;padding:0 24px;color:rgba(255,255,255,.78);font-size:11px;line-height:34px;cursor:pointer;text-decoration:none}
+#marketNewsTicker .news-item{display:inline-flex;align-items:center;gap:9px;padding:0 24px;color:rgba(255,255,255,.78);font-size:11px;line-height:42px;cursor:pointer;text-decoration:none;min-height:42px}
 #marketNewsTicker .news-item:hover{color:#fff;background:rgba(255,255,255,.05)}
 #marketNewsTicker .news-item:after{content:'◆';color:rgba(239,68,68,.72);font-size:7px;margin-left:14px}
 #marketNewsTicker .news-cat{color:#5eead4;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:800;letter-spacing:.08em}
 #marketNewsTicker .news-item.flash .news-cat{color:#fbbf24}
 #marketNewsTicker .news-item.flash span{color:rgba(255,255,255,.9);font-weight:600}
+#marketNewsTicker .news-item.flash{animation:newsFlashIn .45s ease-out}
 #marketNewsTicker .news-source{color:rgba(255,255,255,.3);font-size:9px}
 #marketNewsTicker .news-time{color:rgba(255,255,255,.28);font-family:'JetBrains Mono',monospace;font-size:9px}
 #marketNewsTicker .news-refresh{height:100%;display:flex;align-items:center;padding:0 10px;color:rgba(255,255,255,.28);font:9px 'JetBrains Mono',monospace;white-space:nowrap;position:relative;z-index:2;background:linear-gradient(90deg,transparent,rgba(7,9,13,.96) 25%)}
 #marketNewsTicker .news-refresh.is-live{color:#34d399}
 @keyframes newsTickerScroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes newsFlashIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
 body{padding-top:0!important}
-@media(max-width:640px){#marketNewsTicker .news-badge{padding:0 10px;font-size:9px}#marketNewsTicker .news-item{padding:0 15px;font-size:10px}#marketNewsTicker .news-refresh{display:none}}
+@media(max-width:640px){#marketNewsTicker{height:40px}#marketNewsTicker .news-badge{padding:0 10px;font-size:9px}#marketNewsTicker .news-item{padding:0 15px;font-size:10px;line-height:40px;min-height:40px}#marketNewsTicker .news-refresh{display:none}}
 
 
 /* Compact live-status indicator replacing the oversized status pill */
@@ -1362,9 +1364,10 @@ Error generating stack: `+o.message+`
       ];
       var ticker=document.createElement('div');
       ticker.id='marketNewsTicker';
-      ticker.innerHTML='<div class="news-badge"><i></i>LIVE NEWS</div><div class="news-window"><div class="news-track"></div></div><div class="news-refresh">CONNECTING</div>';
+      ticker.innerHTML='<div class="news-badge"><i></i>LIVE FLASH</div><div class="news-window"><div class="news-track"></div></div><div class="news-refresh">CONNECTING</div>';
       document.body.insertBefore(ticker,document.body.firstChild);
       var track=ticker.querySelector('.news-track'), status=ticker.querySelector('.news-refresh');
+      var fallbackIndex=0, fallbackTimer;
       function esc(v){return String(v||'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
       function ago(date){var d=Date.now()-new Date(date).getTime(),m=Math.max(1,Math.round(d/60000));return m<60?m+'m ago':Math.round(m/60)+'h ago'}
       function parse(items,cat,maxAgeHours){
@@ -1399,6 +1402,14 @@ Error generating stack: `+o.message+`
         track.innerHTML=isFallback?html:html+html;
         track.style.animation=isFallback?'none':'';
         track.style.animationDuration=Math.max(260,items.length*9)+'s';
+        if(isFallback){
+          clearInterval(fallbackTimer);
+          fallbackTimer=setInterval(function(){
+            fallbackIndex=(fallbackIndex+1)%fallback.length;
+            var n=fallback[fallbackIndex];
+            track.innerHTML='<a class="news-item flash" href="#" onclick="return false"><b class="news-cat">'+esc(n.cat)+'</b><span>'+esc(n.title)+'</span><small class="news-source">'+esc(n.source)+'</small><small class="news-time">LIVE</small></a>';
+          },6500);
+        }else clearInterval(fallbackTimer);
       }
       async function refresh(){
         status.textContent='UPDATING'; status.classList.remove('is-live');
