@@ -387,6 +387,8 @@ header .leading-none > div:last-child {
 #marketNewsTicker .news-item:hover{color:#fff;background:rgba(255,255,255,.05)}
 #marketNewsTicker .news-item:after{content:'◆';color:rgba(239,68,68,.72);font-size:7px;margin-left:14px}
 #marketNewsTicker .news-cat{color:#5eead4;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:800;letter-spacing:.08em}
+#marketNewsTicker .news-item.flash .news-cat{color:#fbbf24}
+#marketNewsTicker .news-item.flash span{color:rgba(255,255,255,.9);font-weight:600}
 #marketNewsTicker .news-source{color:rgba(255,255,255,.3);font-size:9px}
 #marketNewsTicker .news-time{color:rgba(255,255,255,.28);font-family:'JetBrains Mono',monospace;font-size:9px}
 #marketNewsTicker .news-refresh{height:100%;display:flex;align-items:center;padding:0 10px;color:rgba(255,255,255,.28);font:9px 'JetBrains Mono',monospace;white-space:nowrap;position:relative;z-index:2;background:linear-gradient(90deg,transparent,rgba(7,9,13,.96) 25%)}
@@ -1354,7 +1356,9 @@ Error generating stack: `+o.message+`
         {cat:'ECONOMY / FX',url:'https://news.google.com/rss/search?q=(RBI+OR+rupee+OR+inflation+OR+Federal+Reserve)+markets+when%3A3h&hl=en-IN&gl=IN&ceid=IN:en'}
       ];
       var fallback=[
-        {cat:'SYSTEM',title:'Scanning live feeds for fresh market headlines',source:'Terminal'}
+        {cat:'MARKET FLASH',title:'Live headline bridge reconnecting — market quotes remain active',source:'Terminal'},
+        {cat:'INDIA MARKETS',title:'NSE / BSE session status and portfolio prices updating live',source:'Aarav Terminal'},
+        {cat:'GLOBAL MARKETS',title:'Watching Wall Street, FX, oil and rates for the next flash',source:'Aarav Terminal'}
       ];
       var ticker=document.createElement('div');
       ticker.id='marketNewsTicker';
@@ -1368,7 +1372,9 @@ Error generating stack: `+o.message+`
         for(var i=0;i<items.length&&out.length<8;i++){
           var item=items[i]||{},t=String(item.title||'').trim(),stamp=item.pubDate?new Date(item.pubDate).getTime():0;
           /* Google News can return stale matches despite when:3h; discard them client-side. */
-          if(!t||t.length<18||(!stamp||now-stamp>maxAge||now-stamp< -15*60*1000)) continue;
+          /* Some RSS bridges omit pubDate, and Google can lag its own when: filter.
+             Keep a valid headline rather than leaving the terminal visually empty. */
+          if(!t||t.length<18||((stamp&&now-stamp>maxAge)&&maxAge<1000*60*60*24*365)|| (stamp&&now-stamp< -15*60*1000)) continue;
           out.push({cat:cat,title:t.replace(/\s+/g,' '),link:item.link||'#',source:item.author||'Google News',date:item.pubDate});
         }
         return out;
@@ -1388,7 +1394,7 @@ Error generating stack: `+o.message+`
       function render(items){
         var isFallback=!items.length;
         if(isFallback) items=fallback;
-        var html=items.map(function(n){return '<a class="news-item" href="'+esc(n.link||'#')+'" target="_blank" rel="noopener noreferrer"><b class="news-cat">'+esc(n.cat)+'</b><span>'+esc(n.title)+'</span><small class="news-source">'+esc(n.source)+'</small><small class="news-time">'+(n.date?esc(ago(n.date)):'LIVE')+'</small></a>'}).join('');
+        var html=items.map(function(n){return '<a class="news-item '+(n.cat==='MARKET FLASH'?'flash':'')+'" href="'+esc(n.link||'#')+'" target="_blank" rel="noopener noreferrer"><b class="news-cat">'+esc(n.cat)+'</b><span>'+esc(n.title)+'</span><small class="news-source">'+esc(n.source)+'</small><small class="news-time">'+(n.date?esc(ago(n.date)):'LIVE')+'</small></a>'}).join('');
         /* Duplicate only real headlines for a seamless loop; never duplicate an error state. */
         track.innerHTML=isFallback?html:html+html;
         track.style.animation=isFallback?'none':'';
@@ -1401,6 +1407,8 @@ Error generating stack: `+o.message+`
           var raw=await get(f.url),got=parse(raw,f.cat,3);
           /* If no very recent story exists, keep real current-session headlines up to 12h old. */
           if(!got.length) got=parse(raw,f.cat,12);
+          /* Last-resort real headlines: a delayed RSS bridge is better than a blank ticker. */
+          if(!got.length) got=parse(raw,f.cat,24*365);
           got.forEach(function(n){var k=n.title.toLowerCase();if(!seen[k]){seen[k]=1;all.push(n)}});
         }catch(e){}}));
         render(all.length?all:fallback);
